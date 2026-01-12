@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { CommandPalette } from '@/components/layout/command-palette';
+import { OnboardingOverlay, FirstProjectPrompt, WelcomeDialog } from '@/components/onboarding';
 import { useSidebarStore } from '@/store';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
@@ -51,6 +52,11 @@ export default function DashboardLayout({
       >
         <div className="p-6">{children}</div>
       </main>
+
+      {/* Onboarding Components */}
+      <WelcomeDialog />
+      <OnboardingOverlay />
+      <FirstProjectPrompt />
     </div>
   );
 }

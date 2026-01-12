@@ -175,7 +175,7 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-onboarding="tasks-header">
         <div>
           <h1 className="text-3xl font-bold text-white">Tasks</h1>
           <p className="mt-1 text-zinc-400">
@@ -185,7 +185,7 @@ export default function TasksPage() {
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button data-onboarding="create-task">
               <Plus className="mr-2 h-4 w-4" />
               New Task
             </Button>

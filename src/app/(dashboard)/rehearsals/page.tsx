@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogContent,
@@ -21,50 +20,10 @@ import {
   CalendarDays,
   Plus,
   MapPin,
-  Clock,
-  Users,
   Target,
-  Mic,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
   Loader2,
 } from 'lucide-react';
-import { formatDate, formatDateTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
-
-// Mock data
-const rehearsals = [
-  {
-    id: '1',
-    title: 'Weekly Band Rehearsal',
-    location: 'Studio A',
-    scheduledAt: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-    endTime: new Date(Date.now() + 86400000 + 10800000).toISOString(),
-    notes: 'Focus on new songs from the album',
-    goals: ['Run through full setlist', 'Work on transitions', 'Record rehearsal for review'],
-    attendees: [
-      { id: '1', name: 'Alex', status: 'confirmed', avatar: null },
-      { id: '2', name: 'Sam', status: 'confirmed', avatar: null },
-      { id: '3', name: 'Jordan', status: 'pending', avatar: null },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Pre-show Rehearsal',
-    location: 'The Venue - Backstage',
-    scheduledAt: new Date(Date.now() + 604800000).toISOString(), // Next week
-    endTime: new Date(Date.now() + 604800000 + 7200000).toISOString(),
-    notes: 'Final run-through before the show',
-    goals: ['Sound check', 'Run full set', 'Check all gear'],
-    attendees: [
-      { id: '1', name: 'Alex', status: 'confirmed', avatar: null },
-      { id: '2', name: 'Sam', status: 'confirmed', avatar: null },
-      { id: '3', name: 'Jordan', status: 'confirmed', avatar: null },
-      { id: '4', name: 'Taylor', status: 'confirmed', avatar: null },
-    ],
-  },
-];
 
 export default function RehearsalsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -85,7 +44,7 @@ export default function RehearsalsPage() {
     }
 
     setIsCreating(true);
-    // Simulate API call
+    // TODO: Implement API call when rehearsals API is ready
     await new Promise((resolve) => setTimeout(resolve, 1000));
     toast.success('Rehearsal scheduled!');
     setIsCreateDialogOpen(false);
@@ -99,25 +58,6 @@ export default function RehearsalsPage() {
     });
     setIsCreating(false);
   };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'declined':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <HelpCircle className="h-4 w-4 text-yellow-500" />;
-    }
-  };
-
-  const upcomingRehearsals = rehearsals.filter(
-    (r) => new Date(r.scheduledAt) > new Date()
-  );
-
-  const pastRehearsals = rehearsals.filter(
-    (r) => new Date(r.scheduledAt) <= new Date()
-  );
 
   return (
     <div className="space-y-6">
@@ -233,127 +173,21 @@ export default function RehearsalsPage() {
         </Dialog>
       </div>
 
-      {/* Upcoming Rehearsals */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Upcoming</h2>
-
-        {upcomingRehearsals.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <CalendarDays className="h-10 w-10 text-zinc-500" />
-              <p className="mt-2 text-sm text-zinc-400">No upcoming rehearsals</p>
-              <Button className="mt-4" size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-                Schedule One
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {upcomingRehearsals.map((rehearsal) => (
-              <Card key={rehearsal.id} className="transition-colors hover:border-zinc-700">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{rehearsal.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <CalendarDays className="h-4 w-4" />
-                        {formatDateTime(rehearsal.scheduledAt)}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary">Upcoming</Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Location */}
-                  {rehearsal.location && (
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
-                      <MapPin className="h-4 w-4" />
-                      {rehearsal.location}
-                    </div>
-                  )}
-
-                  {/* Goals */}
-                  {rehearsal.goals && rehearsal.goals.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-medium text-white">
-                        <Target className="h-4 w-4" />
-                        Goals
-                      </div>
-                      <ul className="space-y-1">
-                        {rehearsal.goals.map((goal, i) => (
-                          <li key={i} className="flex items-center gap-2 text-sm text-zinc-400">
-                            <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                            {goal}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Attendees */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium text-white">
-                      <Users className="h-4 w-4" />
-                      Attendees
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {rehearsal.attendees.map((attendee) => (
-                        <div
-                          key={attendee.id}
-                          className="flex items-center gap-2 rounded-full bg-zinc-800 px-3 py-1"
-                        >
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={attendee.avatar || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {attendee.name[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-zinc-300">{attendee.name}</span>
-                          {getStatusIcon(attendee.status)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Past Rehearsals */}
-      {pastRehearsals.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Past</h2>
-          <div className="space-y-2">
-            {pastRehearsals.map((rehearsal) => (
-              <Card key={rehearsal.id} className="bg-zinc-900/50">
-                <CardContent className="flex items-center gap-4 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
-                    <Mic className="h-5 w-5 text-zinc-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium text-zinc-300">{rehearsal.title}</h3>
-                    <p className="text-sm text-zinc-500">
-                      {formatDate(rehearsal.scheduledAt)} at {rehearsal.location}
-                    </p>
-                  </div>
-                  <div className="flex -space-x-2">
-                    {rehearsal.attendees.slice(0, 3).map((attendee) => (
-                      <Avatar key={attendee.id} className="h-7 w-7 border-2 border-zinc-900">
-                        <AvatarFallback className="text-xs">
-                          {attendee.name[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Empty State */}
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-16">
+          <CalendarDays className="h-12 w-12 text-zinc-500" />
+          <h3 className="mt-4 text-lg font-medium text-white">No rehearsals scheduled</h3>
+          <p className="mt-2 text-sm text-zinc-400 text-center max-w-md">
+            Schedule your band rehearsals to keep everyone in sync.
+            Track attendance, set goals, and record notes.
+          </p>
+          <Button className="mt-6" onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Schedule Your First Rehearsal
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

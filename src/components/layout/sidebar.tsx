@@ -105,6 +105,7 @@ export function Sidebar() {
   return (
     <TooltipProvider>
       <aside
+        data-onboarding="sidebar"
         className={cn(
           'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
