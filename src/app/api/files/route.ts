@@ -18,15 +18,14 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('projectId');
     const songId = searchParams.get('songId');
 
-    let query = db.select().from(files);
-
+    let allFiles;
     if (projectId) {
-      query = db.select().from(files).where(eq(files.projectId, projectId));
+      allFiles = await db.select().from(files).where(eq(files.projectId, projectId)).orderBy(desc(files.updatedAt));
     } else if (songId) {
-      query = db.select().from(files).where(eq(files.songId, songId));
+      allFiles = await db.select().from(files).where(eq(files.songId, songId)).orderBy(desc(files.updatedAt));
+    } else {
+      allFiles = await db.select().from(files).orderBy(desc(files.updatedAt));
     }
-
-    const allFiles = await query.orderBy(desc(files.updatedAt));
 
     // Get versions and uploader for each file
     const filesWithRelations = await Promise.all(

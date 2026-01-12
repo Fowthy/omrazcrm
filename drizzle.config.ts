@@ -3,8 +3,9 @@ import type { Config } from 'drizzle-kit';
 export default {
   schema: './src/lib/db/schema.ts',
   out: './drizzle',
-  dialect: 'sqlite',
+  dialect: 'turso',
   dbCredentials: {
-    url: './data/omraz.db',
+    url: process.env.DATABASE_URL || 'file:./data/omraz.db',
+    authToken: process.env.DATABASE_AUTH_TOKEN,
   },
 } satisfies Config;

@@ -31,11 +31,12 @@ A comprehensive band management platform for Omraz that centralizes all band-rel
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 with App Router
+- **Framework**: Next.js 16 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: SQLite with Drizzle ORM
-- **Authentication**: NextAuth.js
+- **Database**: Turso/libSQL (SQLite-compatible, Edge-ready)
+- **ORM**: Drizzle ORM
+- **Authentication**: NextAuth.js v5
 - **State Management**: Zustand
 - **Audio**: WaveSurfer.js for waveform visualization
 - **UI Components**: Radix UI primitives with shadcn/ui styling
@@ -114,6 +115,47 @@ src/
 │   └── utils.ts          # Utility functions
 ├── store/                 # Zustand stores
 └── types/                 # TypeScript type definitions
+```
+
+## Deploying to Vercel
+
+### 1. Create a Turso Database
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Login to Turso
+turso auth login
+
+# Create a database
+turso db create omraz-studio
+
+# Get database URL
+turso db show omraz-studio --url
+
+# Create auth token
+turso db tokens create omraz-studio
+```
+
+### 2. Deploy to Vercel
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com) and import your repository
+3. Add environment variables:
+   - `DATABASE_URL` - Your Turso database URL (e.g., `libsql://your-db.turso.io`)
+   - `DATABASE_AUTH_TOKEN` - Your Turso auth token
+   - `NEXTAUTH_SECRET` - A random secret string (generate with `openssl rand -base64 32`)
+   - `NEXTAUTH_URL` - Your Vercel deployment URL (e.g., `https://your-app.vercel.app`)
+4. Deploy!
+
+### 3. Initialize Database
+
+After deployment, run the database migrations:
+
+```bash
+# Push schema to Turso
+DATABASE_URL=libsql://your-db.turso.io DATABASE_AUTH_TOKEN=your-token npx drizzle-kit push
 ```
 
 ## Contributing
