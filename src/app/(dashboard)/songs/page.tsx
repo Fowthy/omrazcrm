@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import {
   Select,
   SelectContent,
@@ -30,11 +31,14 @@ import {
   Plus,
   Search,
   Play,
+  Pause,
   FileAudio,
   MessageSquare,
   Clock,
   Loader2,
   FolderKanban,
+  Volume2,
+  X,
 } from 'lucide-react';
 import { projectStatuses, musicalKeys, formatDuration, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -72,6 +76,100 @@ export default function SongsPage() {
     status: 'idea',
     projectId: '',
   });
+
+  // Audio player state
+  const [playingSongId, setPlayingSongId] = useState<string | null>(null);
+  const [playingSongTitle, setPlayingSongTitle] = useState<string>('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.7);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+
+  const handlePlaySong = async (song: Song) => {
+    // If clicking on currently playing song, toggle play/pause
+    if (playingSongId === song.id && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+      return;
+    }
+
+    // Load new song
+    if (song.fileCount === 0) {
+      toast.error('No audio files for this song');
+      return;
+    }
+
+    setIsLoadingAudio(true);
+    try {
+      // Fetch files for the song
+      const res = await fetch(`/api/songs/${song.id}`);
+      if (!res.ok) throw new Error('Failed to fetch song');
+      const songData = await res.json();
+
+      // Find first audio file
+      const audioFile = songData.files?.find((f: { type: string; url: string }) =>
+        f.type?.startsWith('audio/') || f.url?.endsWith('.mp3') || f.url?.endsWith('.wav')
+      );
+
+      if (!audioFile) {
+        toast.error('No audio files found');
+        setIsLoadingAudio(false);
+        return;
+      }
+
+      setPlayingSongId(song.id);
+      setPlayingSongTitle(song.title);
+
+      if (audioRef.current) {
+        audioRef.current.src = audioFile.url;
+        audioRef.current.load();
+        await audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      toast.error('Failed to play song');
+    } finally {
+      setIsLoadingAudio(false);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0];
+      setCurrentTime(value[0]);
+    }
+  };
+
+  const closePlayer = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
+    setPlayingSongId(null);
+    setPlayingSongTitle('');
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const { data: songs, isLoading, refetch } = useQuery<Song[]>({
     queryKey: ['songs'],
@@ -368,11 +466,19 @@ export default function SongsPage() {
                   <button
                     onClick={(e) => {
                       e.preventDefault();
-                      // TODO: Play song
+                      e.stopPropagation();
+                      handlePlaySong(song);
                     }}
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-600/20 text-violet-500 transition-colors hover:bg-violet-600 hover:text-white"
+                    disabled={isLoadingAudio}
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-600/20 text-violet-500 transition-colors hover:bg-violet-600 hover:text-white disabled:opacity-50"
                   >
-                    <Play className="h-5 w-5 ml-0.5" />
+                    {isLoadingAudio && playingSongId === song.id ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : playingSongId === song.id && isPlaying ? (
+                      <Pause className="h-5 w-5" />
+                    ) : (
+                      <Play className="h-5 w-5 ml-0.5" />
+                    )}
                   </button>
 
                   {/* Song Info */}
@@ -419,6 +525,78 @@ export default function SongsPage() {
               </Card>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Hidden audio element */}
+      <audio
+        ref={audioRef}
+        onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
+        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+        onEnded={() => setIsPlaying(false)}
+      />
+
+      {/* Audio Player Bar */}
+      {playingSongId && (
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 p-4 z-50">
+          <div className="max-w-7xl mx-auto flex items-center gap-4">
+            {/* Play/Pause */}
+            <button
+              onClick={() => {
+                if (audioRef.current) {
+                  if (isPlaying) {
+                    audioRef.current.pause();
+                    setIsPlaying(false);
+                  } else {
+                    audioRef.current.play();
+                    setIsPlaying(true);
+                  }
+                }
+              }}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white hover:bg-violet-500"
+            >
+              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+            </button>
+
+            {/* Song Info */}
+            <div className="min-w-0 flex-shrink-0">
+              <p className="text-sm font-medium text-white truncate">{playingSongTitle}</p>
+              <p className="text-xs text-zinc-400">Now Playing</p>
+            </div>
+
+            {/* Progress */}
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-xs text-zinc-400 w-10">{formatTime(currentTime)}</span>
+              <Slider
+                value={[currentTime]}
+                max={duration || 100}
+                step={1}
+                onValueChange={handleSeek}
+                className="flex-1"
+              />
+              <span className="text-xs text-zinc-400 w-10">{formatTime(duration)}</span>
+            </div>
+
+            {/* Volume */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Volume2 className="h-4 w-4 text-zinc-400" />
+              <Slider
+                value={[volume * 100]}
+                max={100}
+                step={1}
+                onValueChange={(value) => setVolume(value[0] / 100)}
+                className="w-24"
+              />
+            </div>
+
+            {/* Close */}
+            <button
+              onClick={closePlayer}
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
     </div>

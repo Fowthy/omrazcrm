@@ -36,8 +36,10 @@ import {
   DollarSign,
   Trash2,
   Edit,
+  Calendar,
+  User,
 } from 'lucide-react';
-import { gearCategories } from '@/lib/utils';
+import { gearCategories, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface GearItem {
@@ -56,14 +58,34 @@ interface GearItem {
   createdAt: string;
 }
 
+interface MaintenanceLog {
+  id: string;
+  gearItemId: string;
+  date: string;
+  type: string;
+  description: string;
+  cost: number | null;
+  performedBy: string | null;
+}
+
+const maintenanceTypes = [
+  { value: 'repair', label: 'Repair' },
+  { value: 'setup', label: 'Setup' },
+  { value: 'cleaning', label: 'Cleaning' },
+  { value: 'strings', label: 'String Change' },
+  { value: 'other', label: 'Other' },
+];
+
 export default function GearPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('inventory');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editingGear, setEditingGear] = useState<GearItem | null>(null);
+  const [selectedGearForMaintenance, setSelectedGearForMaintenance] = useState<GearItem | null>(null);
   const [newGear, setNewGear] = useState({
     name: '',
     category: 'guitar',
@@ -75,6 +97,13 @@ export default function GearPage() {
     location: '',
     notes: '',
     isWishlist: false,
+  });
+  const [newMaintenance, setNewMaintenance] = useState({
+    date: new Date().toISOString().split('T')[0],
+    type: 'setup',
+    description: '',
+    cost: '',
+    performedBy: '',
   });
 
   const { data: gearItems, isLoading } = useQuery<GearItem[]>({
@@ -97,6 +126,65 @@ export default function GearPage() {
      item.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
      item.model?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // Fetch all maintenance logs for all gear items
+  const { data: allMaintenanceLogs, isLoading: isLoadingMaintenance } = useQuery<{gearId: string; gearName: string; logs: MaintenanceLog[]}[]>({
+    queryKey: ['gear-maintenance-all'],
+    queryFn: async () => {
+      if (!inventoryItems?.length) return [];
+      const logsPromises = inventoryItems.map(async (item) => {
+        try {
+          const res = await fetch(`/api/gear/${item.id}/maintenance`);
+          if (!res.ok) return { gearId: item.id, gearName: item.name, logs: [] };
+          const logs = await res.json();
+          return { gearId: item.id, gearName: item.name, logs };
+        } catch {
+          return { gearId: item.id, gearName: item.name, logs: [] };
+        }
+      });
+      return Promise.all(logsPromises);
+    },
+    enabled: !!inventoryItems?.length,
+  });
+
+  // Flatten all maintenance logs with gear info
+  const flattenedLogs = allMaintenanceLogs?.flatMap(item =>
+    item.logs.map(log => ({ ...log, gearName: item.gearName }))
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+
+  const handleAddMaintenance = async () => {
+    if (!selectedGearForMaintenance || !newMaintenance.description.trim()) {
+      toast.error('Please select gear and provide a description');
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const res = await fetch(`/api/gear/${selectedGearForMaintenance.id}/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMaintenance),
+      });
+
+      if (!res.ok) throw new Error('Failed to add maintenance log');
+
+      toast.success('Maintenance log added!');
+      setIsMaintenanceDialogOpen(false);
+      setNewMaintenance({
+        date: new Date().toISOString().split('T')[0],
+        type: 'setup',
+        description: '',
+        cost: '',
+        performedBy: '',
+      });
+      setSelectedGearForMaintenance(null);
+      queryClient.invalidateQueries({ queryKey: ['gear-maintenance-all'] });
+    } catch (error) {
+      toast.error('Failed to add maintenance log');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleCreateGear = async () => {
     if (!newGear.name.trim()) {
@@ -508,15 +596,70 @@ export default function GearPage() {
         </TabsContent>
 
         <TabsContent value="maintenance" className="space-y-4">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Wrench className="h-12 w-12 text-zinc-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">No maintenance logs</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Track repairs, setups, and maintenance for your gear
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex justify-end">
+            <Button onClick={() => setIsMaintenanceDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Maintenance Log
+            </Button>
+          </div>
+
+          {isLoadingMaintenance ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+            </div>
+          ) : flattenedLogs.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Wrench className="h-12 w-12 text-zinc-500" />
+                <h3 className="mt-4 text-lg font-medium text-white">No maintenance logs</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Track repairs, setups, and maintenance for your gear
+                </p>
+                <Button className="mt-6" onClick={() => setIsMaintenanceDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Log
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {flattenedLogs.map((log) => (
+                <Card key={log.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {maintenanceTypes.find(t => t.value === log.type)?.label || log.type}
+                          </Badge>
+                          <span className="text-sm font-medium text-white">{log.gearName}</span>
+                        </div>
+                        <p className="mt-2 text-zinc-300">{log.description}</p>
+                        <div className="mt-2 flex items-center gap-4 text-sm text-zinc-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(log.date)}
+                          </span>
+                          {log.performedBy && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {log.performedBy}
+                            </span>
+                          )}
+                          {log.cost && (
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3" />
+                              ${log.cost}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -645,6 +788,118 @@ export default function GearPage() {
                 </>
               ) : (
                 'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Maintenance Dialog */}
+      <Dialog open={isMaintenanceDialogOpen} onOpenChange={setIsMaintenanceDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Maintenance Log</DialogTitle>
+            <DialogDescription>
+              Record a maintenance activity for your gear
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Gear *</Label>
+              <Select
+                value={selectedGearForMaintenance?.id || ''}
+                onValueChange={(value) => {
+                  const gear = inventoryItems?.find(g => g.id === value);
+                  setSelectedGearForMaintenance(gear || null);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gear item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {inventoryItems?.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} {item.brand && `(${item.brand})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date *</Label>
+                <Input
+                  type="date"
+                  value={newMaintenance.date}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Type *</Label>
+                <Select
+                  value={newMaintenance.type}
+                  onValueChange={(value) => setNewMaintenance({ ...newMaintenance, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {maintenanceTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description *</Label>
+              <Textarea
+                placeholder="What was done?"
+                value={newMaintenance.description}
+                onChange={(e) => setNewMaintenance({ ...newMaintenance, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Cost ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newMaintenance.cost}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, cost: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Performed By</Label>
+                <Input
+                  placeholder="Name or shop"
+                  value={newMaintenance.performedBy}
+                  onChange={(e) => setNewMaintenance({ ...newMaintenance, performedBy: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMaintenanceDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMaintenance} disabled={isCreating}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Log'
               )}
             </Button>
           </DialogFooter>
