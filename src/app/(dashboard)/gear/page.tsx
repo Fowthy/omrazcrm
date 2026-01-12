@@ -399,11 +399,12 @@ export default function GearPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Notes</Label>
+                <Label>Notes & Ideas</Label>
                 <Textarea
-                  placeholder="Any additional notes..."
+                  placeholder="Usage notes, modification ideas, tone settings..."
                   value={newGear.notes}
                   onChange={(e) => setNewGear({ ...newGear, notes: e.target.value })}
+                  rows={3}
                 />
               </div>
             </div>
@@ -621,10 +622,12 @@ export default function GearPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Notes</Label>
+                <Label>Notes & Ideas</Label>
                 <Textarea
+                  placeholder="Usage notes, modification ideas, tone settings..."
                   value={editingGear.notes || ''}
                   onChange={(e) => setEditingGear({ ...editingGear, notes: e.target.value })}
+                  rows={3}
                 />
               </div>
             </div>

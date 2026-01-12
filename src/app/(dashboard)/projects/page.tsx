@@ -174,14 +174,15 @@ export default function ProjectsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Notes & Ideas</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe your project..."
+                  placeholder="Add prompts, ideas, vision notes for this project..."
                   value={newProject.description}
                   onChange={(e) =>
                     setNewProject({ ...newProject, description: e.target.value })
                   }
+                  rows={3}
                 />
               </div>
 
