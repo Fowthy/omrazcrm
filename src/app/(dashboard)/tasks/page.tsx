@@ -260,16 +260,16 @@ export default function TasksPage() {
               <div className="space-y-2">
                 <Label>Project (Optional)</Label>
                 <Select
-                  value={newTask.projectId}
+                  value={newTask.projectId || 'none'}
                   onValueChange={(value) =>
-                    setNewTask({ ...newTask, projectId: value })
+                    setNewTask({ ...newTask, projectId: value === 'none' ? '' : value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No project</SelectItem>
+                    <SelectItem value="none">No project</SelectItem>
                     {projectsList?.map((project: { id: string; name: string }) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}

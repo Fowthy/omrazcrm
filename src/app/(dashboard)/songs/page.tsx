@@ -246,16 +246,16 @@ export default function SongsPage() {
               <div className="space-y-2">
                 <Label>Project (Optional)</Label>
                 <Select
-                  value={newSong.projectId}
+                  value={newSong.projectId || 'none'}
                   onValueChange={(value) =>
-                    setNewSong({ ...newSong, projectId: value })
+                    setNewSong({ ...newSong, projectId: value === 'none' ? '' : value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No project</SelectItem>
+                    <SelectItem value="none">No project</SelectItem>
                     {projectsList?.map((project: { id: string; name: string }) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
