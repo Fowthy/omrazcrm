@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ import toast from 'react-hot-toast';
 
 export function FirstProjectPrompt() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { showFirstProjectPrompt, dismissFirstProjectPrompt, hasSeenFirstProjectPrompt } = useOnboardingStore();
   const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -55,6 +57,10 @@ export function FirstProjectPrompt() {
       if (!res.ok) throw new Error('Failed to create project');
 
       const project = await res.json();
+
+      // Invalidate queries so dashboard and project list update
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+
       toast.success('Project created! Let\'s start making music!');
       dismissFirstProjectPrompt();
       router.push(`/projects`);

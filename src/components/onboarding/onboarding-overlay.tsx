@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOnboardingStore, onboardingSteps } from '@/store/onboarding';
-import { X, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 
 export function OnboardingOverlay() {
   const router = useRouter();
@@ -20,21 +20,25 @@ export function OnboardingOverlay() {
   } = useOnboardingStore();
 
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isPositionReady, setIsPositionReady] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevStepIndexRef = useRef(currentStepIndex);
 
   const currentStep = getCurrentStep();
 
   const updateTargetPosition = useCallback(() => {
-    if (!currentStep) return;
+    if (!currentStep) return false;
 
     const element = document.querySelector(currentStep.target);
     if (element) {
       const rect = element.getBoundingClientRect();
-      setTargetRect(rect);
-      setIsVisible(true);
-    } else {
-      setIsVisible(false);
+      // Ensure the element is actually visible on screen
+      if (rect.width > 0 && rect.height > 0) {
+        setTargetRect(rect);
+        return true;
+      }
     }
+    return false;
   }, [currentStep]);
 
   // Navigate to the correct page for the current step
@@ -42,34 +46,77 @@ export function OnboardingOverlay() {
     if (!currentStep || !isOnboardingActive) return;
 
     if (pathname !== currentStep.page) {
+      setIsPositionReady(false);
+      setIsTransitioning(true);
       router.push(currentStep.page);
     }
   }, [currentStep, pathname, router, isOnboardingActive]);
+
+  // Reset position ready state when step changes
+  useEffect(() => {
+    if (prevStepIndexRef.current !== currentStepIndex) {
+      setIsPositionReady(false);
+      setIsTransitioning(true);
+      prevStepIndexRef.current = currentStepIndex;
+    }
+  }, [currentStepIndex]);
 
   // Update target position when step changes or after navigation
   useEffect(() => {
     if (!isOnboardingActive || !currentStep) return;
 
-    // Wait for page to render
-    const timer = setTimeout(() => {
-      updateTargetPosition();
-    }, 300);
+    let attempts = 0;
+    const maxAttempts = 20;
 
-    // Update on resize
-    window.addEventListener('resize', updateTargetPosition);
-    window.addEventListener('scroll', updateTargetPosition);
+    const tryFindElement = () => {
+      const found = updateTargetPosition();
+      if (found) {
+        // Add a small delay to ensure smooth transition
+        setTimeout(() => {
+          setIsPositionReady(true);
+          setIsTransitioning(false);
+        }, 50);
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(tryFindElement, 100);
+      } else {
+        // Element not found after max attempts, still show tooltip
+        setIsPositionReady(true);
+        setIsTransitioning(false);
+      }
+    };
+
+    // Start looking for the element
+    const timer = setTimeout(tryFindElement, pathname === currentStep.page ? 100 : 400);
+
+    // Update on resize and scroll
+    const handleUpdate = () => {
+      if (isPositionReady) {
+        updateTargetPosition();
+      }
+    };
+
+    window.addEventListener('resize', handleUpdate);
+    window.addEventListener('scroll', handleUpdate);
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('resize', updateTargetPosition);
-      window.removeEventListener('scroll', updateTargetPosition);
+      window.removeEventListener('resize', handleUpdate);
+      window.removeEventListener('scroll', handleUpdate);
     };
-  }, [isOnboardingActive, currentStep, pathname, updateTargetPosition]);
+  }, [isOnboardingActive, currentStep, pathname, updateTargetPosition, isPositionReady]);
 
   if (!isOnboardingActive || !currentStep) return null;
 
   const getTooltipPosition = () => {
-    if (!targetRect) return { top: '50%', left: '50%' };
+    if (!targetRect) {
+      // Center in viewport as fallback
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)'
+      };
+    }
 
     const padding = 16;
     const tooltipWidth = 360;
@@ -104,10 +151,24 @@ export function OnboardingOverlay() {
     left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
     top = Math.max(padding, Math.min(top, window.innerHeight - tooltipHeight - padding));
 
-    return { top: `${top}px`, left: `${left}px` };
+    return { top: `${top}px`, left: `${left}px`, transform: 'none' };
   };
 
   const tooltipPosition = getTooltipPosition();
+
+  // Show loading state while finding the element
+  if (!isPositionReady || isTransitioning) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-black/75 flex items-center justify-center">
+        <Card className="w-[360px] bg-zinc-900 border-violet-500/50 shadow-2xl shadow-violet-500/20">
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-violet-400 mb-4" />
+            <p className="text-zinc-400">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -116,7 +177,7 @@ export function OnboardingOverlay() {
         <defs>
           <mask id="spotlight-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {targetRect && isVisible && (
+            {targetRect && (
               <rect
                 x={targetRect.left - 8}
                 y={targetRect.top - 8}
@@ -139,7 +200,7 @@ export function OnboardingOverlay() {
       </svg>
 
       {/* Highlight ring around target */}
-      {targetRect && isVisible && (
+      {targetRect && (
         <div
           className="absolute pointer-events-none border-2 border-violet-500 rounded-lg animate-pulse"
           style={{

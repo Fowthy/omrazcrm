@@ -4,7 +4,7 @@ import { db, songs, files, users, projects, comments } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await auth();
 
@@ -12,7 +12,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allSongs = await db
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('projectId');
+
+    let query = db
       .select({
         id: songs.id,
         title: songs.title,
@@ -29,8 +32,14 @@ export async function GET() {
         projectId: songs.projectId,
         createdById: songs.createdById,
       })
-      .from(songs)
-      .orderBy(desc(songs.updatedAt));
+      .from(songs);
+
+    let allSongs;
+    if (projectId) {
+      allSongs = await query.where(eq(songs.projectId, projectId)).orderBy(songs.trackNumber);
+    } else {
+      allSongs = await query.orderBy(desc(songs.updatedAt));
+    }
 
     // Get related data for each song
     const songsWithRelations = await Promise.all(

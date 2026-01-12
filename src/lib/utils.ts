@@ -153,6 +153,17 @@ export const taskStatuses = [
   { value: 'done', label: 'Done' },
 ];
 
+export const songStatuses = [
+  { value: 'idea', label: 'Idea', color: 'bg-gray-500' },
+  { value: 'writing', label: 'Writing', color: 'bg-blue-500' },
+  { value: 'demo', label: 'Demo', color: 'bg-cyan-500' },
+  { value: 'recording', label: 'Recording', color: 'bg-yellow-500' },
+  { value: 'mixing', label: 'Mixing', color: 'bg-orange-500' },
+  { value: 'mastering', label: 'Mastering', color: 'bg-purple-500' },
+  { value: 'complete', label: 'Complete', color: 'bg-green-500' },
+  { value: 'released', label: 'Released', color: 'bg-green-600' },
+];
+
 export const taskPriorities = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
