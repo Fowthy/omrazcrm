@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
 import {
   ArrowLeft,
   Plus,
@@ -48,9 +49,25 @@ import {
   FolderKanban,
   MessageSquare,
   Upload,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Download,
+  Lightbulb,
 } from 'lucide-react';
 import { songStatuses, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+interface SongFile {
+  id: string;
+  name: string;
+  type: string;
+  mimeType: string;
+  path: string;
+  size: number;
+  createdAt: string;
+}
 
 interface Song {
   id: string;
@@ -66,13 +83,7 @@ interface Song {
   updatedAt: string;
   project: { id: string; name: string } | null;
   createdBy: { id: string; name: string; avatar: string | null } | null;
-  files: Array<{
-    id: string;
-    name: string;
-    type: string;
-    size: number;
-    createdAt: string;
-  }>;
+  files: SongFile[];
   comments: Array<{
     id: string;
     content: string;
@@ -89,8 +100,21 @@ export default function SongDetailPage() {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Audio player state
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const [editForm, setEditForm] = useState({
     title: '',
@@ -102,7 +126,7 @@ export default function SongDetailPage() {
   });
 
   // Fetch song
-  const { data: song, isLoading } = useQuery<Song>({
+  const { data: song, isLoading, refetch } = useQuery<Song>({
     queryKey: ['song', songId],
     queryFn: async () => {
       const res = await fetch(`/api/songs/${songId}`);
@@ -165,7 +189,6 @@ export default function SongDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ['songs'] });
       toast.success('Song deleted!');
 
-      // Navigate back to project or songs list
       if (song?.project) {
         router.push(`/projects/${song.project.id}`);
       } else {
@@ -175,6 +198,105 @@ export default function SongDetailPage() {
       toast.error('Failed to delete song');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
+      setIsUploadDialogOpen(true);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('songId', songId);
+
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Failed to upload file');
+
+      await refetch();
+      toast.success('File uploaded!');
+      setIsUploadDialogOpen(false);
+      setUploadFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Audio player functions
+  const playAudio = (file: SongFile) => {
+    if (currentlyPlaying === file.id && isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    } else {
+      if (currentlyPlaying !== file.id) {
+        setCurrentlyPlaying(file.id);
+        setCurrentTime(0);
+        // Need to load the new audio source
+        setTimeout(() => {
+          audioRef.current?.play();
+          setIsPlaying(true);
+        }, 100);
+      } else {
+        audioRef.current?.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setAudioDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0];
+      setCurrentTime(value[0]);
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    if (audioRef.current) {
+      if (isMuted) {
+        audioRef.current.volume = volume || 0.5;
+        setIsMuted(false);
+      } else {
+        audioRef.current.volume = 0;
+        setIsMuted(true);
+      }
     }
   };
 
@@ -190,10 +312,10 @@ export default function SongDetailPage() {
     return colors[status] || colors.idea;
   };
 
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return '-';
+  const formatDurationTime = (seconds: number | null | undefined) => {
+    if (!seconds || isNaN(seconds)) return '-';
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -201,6 +323,14 @@ export default function SongDetailPage() {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const isAudioFile = (file: SongFile) => {
+    return file.type === 'audio' || file.mimeType?.startsWith('audio/');
+  };
+
+  const getCurrentPlayingFile = () => {
+    return song?.files?.find((f) => f.id === currentlyPlaying);
   };
 
   if (isLoading) {
@@ -231,8 +361,30 @@ export default function SongDetailPage() {
     );
   }
 
+  const currentFile = getCurrentPlayingFile();
+
   return (
     <div className="space-y-6">
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a"
+        onChange={handleFileSelect}
+      />
+
+      {/* Hidden audio element */}
+      {currentFile && (
+        <audio
+          ref={audioRef}
+          src={currentFile.path}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onEnded={() => setIsPlaying(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
@@ -246,7 +398,7 @@ export default function SongDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-white">{song.title}</h1>
             <Badge variant="outline" className={getStatusColor(song.status)}>
-              {songStatuses.find(s => s.value === song.status)?.label || song.status}
+              {songStatuses.find((s) => s.value === song.status)?.label || song.status}
             </Badge>
           </div>
           <div className="mt-1 flex items-center gap-3 text-zinc-400">
@@ -262,6 +414,10 @@ export default function SongDetailPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Audio
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
@@ -290,6 +446,61 @@ export default function SongDetailPage() {
         </div>
       </div>
 
+      {/* Audio Player (shown when playing) */}
+      {currentFile && (
+        <Card className="border-violet-500/50 bg-gradient-to-r from-violet-500/10 to-cyan-500/10">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-12 w-12 rounded-full bg-violet-600 hover:bg-violet-700"
+                onClick={() => playAudio(currentFile)}
+              >
+                {isPlaying ? (
+                  <Pause className="h-6 w-6 text-white" />
+                ) : (
+                  <Play className="h-6 w-6 text-white ml-0.5" />
+                )}
+              </Button>
+
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">{currentFile.name}</span>
+                  <span className="text-xs text-zinc-400">
+                    {formatDurationTime(currentTime)} / {formatDurationTime(audioDuration)}
+                  </span>
+                </div>
+                <Slider
+                  value={[currentTime]}
+                  max={audioDuration || 100}
+                  step={0.1}
+                  onValueChange={handleSeek}
+                  className="cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={toggleMute}>
+                  {isMuted ? (
+                    <VolumeX className="h-4 w-4" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                </Button>
+                <Slider
+                  value={[isMuted ? 0 : volume]}
+                  max={1}
+                  step={0.01}
+                  onValueChange={handleVolumeChange}
+                  className="w-24 cursor-pointer"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Song Info */}
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>
@@ -299,7 +510,7 @@ export default function SongDetailPage() {
               <span className="text-sm">Duration</span>
             </div>
             <p className="mt-1 text-2xl font-bold text-white">
-              {formatDuration(song.duration)}
+              {formatDurationTime(song.duration)}
             </p>
           </CardContent>
         </Card>
@@ -338,11 +549,15 @@ export default function SongDetailPage() {
         </Card>
       </div>
 
-      {/* Description */}
+      {/* Notes/Ideas Section */}
       {song.description && (
         <Card>
           <CardContent className="pt-6">
-            <p className="text-zinc-300">{song.description}</p>
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="h-5 w-5 text-yellow-400" />
+              <h3 className="font-semibold text-white">Notes & Ideas</h3>
+            </div>
+            <p className="text-zinc-300 whitespace-pre-wrap">{song.description}</p>
           </CardContent>
         </Card>
       )}
@@ -364,7 +579,7 @@ export default function SongDetailPage() {
                 <p className="mt-2 text-sm text-zinc-400">
                   Upload audio files, stems, and mixes
                 </p>
-                <Button className="mt-4" variant="outline">
+                <Button className="mt-4" variant="outline" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="mr-2 h-4 w-4" />
                   Upload Files
                 </Button>
@@ -373,20 +588,38 @@ export default function SongDetailPage() {
           ) : (
             <div className="space-y-2">
               {song.files?.map((file) => (
-                <Card key={file.id}>
+                <Card key={file.id} className={currentlyPlaying === file.id ? 'border-violet-500' : ''}>
                   <CardContent className="flex items-center gap-4 py-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
-                      <FileAudio className="h-5 w-5 text-zinc-400" />
-                    </div>
+                    {isAudioFile(file) ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 rounded-full bg-violet-600/20 hover:bg-violet-600"
+                        onClick={() => playAudio(file)}
+                      >
+                        {currentlyPlaying === file.id && isPlaying ? (
+                          <Pause className="h-5 w-5 text-violet-400" />
+                        ) : (
+                          <Play className="h-5 w-5 text-violet-400 ml-0.5" />
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+                        <FileAudio className="h-5 w-5 text-zinc-400" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-white truncate">{file.name}</h4>
                       <p className="text-sm text-zinc-500">
                         {formatFileSize(file.size)} • {formatDate(file.createdAt)}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm">
-                      Download
-                    </Button>
+                    <a href={file.path} download={file.name}>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-1" />
+                        Download
+                      </Button>
+                    </a>
                   </CardContent>
                 </Card>
               ))}
@@ -441,10 +674,12 @@ export default function SongDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>Notes & Ideas</Label>
               <Textarea
                 value={editForm.description}
                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Add notes, ideas, prompts for this song..."
+                rows={4}
               />
             </div>
 
@@ -507,6 +742,52 @@ export default function SongDetailPage() {
                 </>
               ) : (
                 'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Audio File</DialogTitle>
+            <DialogDescription>
+              Upload an audio file to this song
+            </DialogDescription>
+          </DialogHeader>
+
+          {uploadFile && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-zinc-800">
+                <FileAudio className="h-8 w-8 text-violet-400" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-white truncate">{uploadFile.name}</p>
+                  <p className="text-sm text-zinc-400">{formatFileSize(uploadFile.size)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsUploadDialogOpen(false);
+              setUploadFile(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} disabled={isUploading}>
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload
+                </>
               )}
             </Button>
           </DialogFooter>

@@ -197,14 +197,15 @@ export default function SongsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Notes & Ideas</Label>
                 <Textarea
                   id="description"
-                  placeholder="Notes about this song..."
+                  placeholder="Add prompts, ideas, notes for this song..."
                   value={newSong.description}
                   onChange={(e) =>
                     setNewSong({ ...newSong, description: e.target.value })
                   }
+                  rows={3}
                 />
               </div>
 
