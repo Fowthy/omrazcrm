@@ -31,7 +31,7 @@ export default function DashboardLayout({
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
         <img
-          src="/background.jpg"
+          src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
           alt=""
           className="fixed inset-0 w-full h-full object-cover opacity-20"
         />
@@ -49,7 +49,7 @@ export default function DashboardLayout({
     <div className="min-h-screen relative">
       {/* Background Image with Transparency */}
       <img
-        src="/background.jpg"
+        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
         alt=""
         className="fixed inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
       />

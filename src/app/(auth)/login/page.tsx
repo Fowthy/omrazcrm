@@ -47,7 +47,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4 relative">
       {/* Background Image */}
       <img
-        src="/background.jpg"
+        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
         alt=""
         className="absolute inset-0 w-full h-full object-cover opacity-50"
       />
@@ -57,7 +57,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto h-16 w-48">
             <img
-              src="/logo.png"
+              src="/White%20over%20trans.png"
               alt="Omraz"
               className="w-full h-full object-contain"
             />
