@@ -912,7 +912,7 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {projects?.map((project) => (
+                  {projects?.filter((p) => p.id).map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -932,7 +932,7 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {songs?.map((song) => (
+                  {songs?.filter((s) => s.id).map((song) => (
                     <SelectItem key={song.id} value={song.id}>
                       {song.title}
                     </SelectItem>
