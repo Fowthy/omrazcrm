@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,20 +43,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative">
-      {/* Background Image */}
-      <img
-        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover opacity-50"
-      />
-      <div className="absolute inset-0 bg-black/40" />
+    <div
+      className="flex min-h-screen items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div className="absolute inset-0 bg-black/50" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto h-16 w-48">
             <img
-              src="/White%20over%20trans.png"
+              src="/White over trans.png"
               alt="Omraz"
               className="w-full h-full object-contain"
             />

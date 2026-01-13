@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { CommandPalette } from '@/components/layout/command-palette';
@@ -29,12 +28,14 @@ export default function DashboardLayout({
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <img
-          src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
-          alt=""
-          className="fixed inset-0 w-full h-full object-cover opacity-20"
-        />
+      <div
+        className="flex min-h-screen items-center justify-center"
+        style={{
+          backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
         <div className="fixed inset-0 bg-black/60" />
         <Loader2 className="h-8 w-8 animate-spin text-violet-500 relative z-10" />
       </div>
@@ -46,14 +47,16 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen relative">
-      {/* Background Image with Transparency */}
-      <img
-        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg"
-        alt=""
-        className="fixed inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
-      />
-      <div className="fixed inset-0 bg-black/70 pointer-events-none" />
+    <div
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <div className="fixed inset-0 bg-black/80 pointer-events-none" />
 
       <Sidebar />
       <Header />

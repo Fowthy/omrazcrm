@@ -117,7 +117,7 @@ export function Sidebar() {
         <div className={cn('flex h-16 items-center border-b border-zinc-800 px-4', isCollapsed && 'justify-center px-2')}>
           <Link href="/dashboard" className="flex items-center">
             <img
-              src="/White%20over%20trans.png"
+              src="/White over trans.png"
               alt="Omraz"
               className={cn('object-contain', isCollapsed ? 'h-10 w-10' : 'h-10 w-32')}
             />
