@@ -355,7 +355,7 @@ export default function SongsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No project</SelectItem>
-                    {projectsList?.map((project: { id: string; name: string }) => (
+                    {projectsList?.filter((p: { id: string }) => p.id).map((project: { id: string; name: string }) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>

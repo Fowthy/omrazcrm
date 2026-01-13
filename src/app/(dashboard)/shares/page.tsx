@@ -426,7 +426,7 @@ export default function SharesPage() {
                       <SelectValue placeholder={`Select ${createForm.shareType}...`} />
                     </SelectTrigger>
                     <SelectContent>
-                      {getEntityOptions().map((entity) => (
+                      {getEntityOptions().filter((e) => e.id).map((entity) => (
                         <SelectItem key={entity.id} value={entity.id}>
                           {entity.name}
                         </SelectItem>
