@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { tempoMaps, tempoMapSections } from '@/lib/db/schema';
-import { eq, asc, gt } from 'drizzle-orm';
+import { eq, asc, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
 
-// Add a new section
+// Add section(s) - supports single or batch
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -45,19 +45,30 @@ export async function POST(
       ? Math.max(...existingSections.map(s => s.position))
       : 0;
 
-    // Create new section
-    const sectionId = nanoid();
-    await db.insert(tempoMapSections).values({
-      id: sectionId,
-      tempoMapId,
-      position: maxPosition + 1,
-      name: body.name || null,
-      bars: body.bars || 4,
-      bpm: body.bpm || tempoMap.defaultBpm || 120,
-      timeSignatureNumerator: body.timeSignatureNumerator || 4,
-      timeSignatureDenominator: body.timeSignatureDenominator || 4,
-      notes: body.notes || null,
-    });
+    // Support batch insert (array of sections)
+    const sectionsToAdd = Array.isArray(body.sections) ? body.sections : [body];
+    const newSections = [];
+
+    for (let i = 0; i < sectionsToAdd.length; i++) {
+      const section = sectionsToAdd[i];
+      const sectionId = nanoid();
+      newSections.push({
+        id: sectionId,
+        tempoMapId,
+        position: maxPosition + i + 1,
+        name: section.name || null,
+        bars: section.bars || 4,
+        bpm: section.bpm || tempoMap.defaultBpm || 120,
+        timeSignatureNumerator: section.timeSignatureNumerator || 4,
+        timeSignatureDenominator: section.timeSignatureDenominator || 4,
+        notes: section.notes || null,
+      });
+    }
+
+    // Batch insert all sections at once
+    if (newSections.length > 0) {
+      await db.insert(tempoMapSections).values(newSections);
+    }
 
     // Update tempo map timestamp
     await db
@@ -66,13 +77,18 @@ export async function POST(
       .where(eq(tempoMaps.id, tempoMapId))
       .run();
 
-    const newSection = await db
+    // Return all new sections
+    const insertedSections = await db
       .select()
       .from(tempoMapSections)
-      .where(eq(tempoMapSections.id, sectionId))
-      .get();
+      .where(eq(tempoMapSections.tempoMapId, tempoMapId))
+      .orderBy(asc(tempoMapSections.position))
+      .all();
 
-    return NextResponse.json(newSection, { status: 201 });
+    return NextResponse.json(
+      Array.isArray(body.sections) ? insertedSections : insertedSections[insertedSections.length - 1],
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error adding section:', error);
     return NextResponse.json(
@@ -163,7 +179,7 @@ export async function PATCH(
   }
 }
 
-// Delete a section
+// Delete section(s) - supports single or clearAll
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -177,6 +193,23 @@ export async function DELETE(
     const { id: tempoMapId } = await params;
     const { searchParams } = new URL(request.url);
     const sectionId = searchParams.get('sectionId');
+    const clearAll = searchParams.get('clearAll') === 'true';
+
+    // Clear all sections at once
+    if (clearAll) {
+      await db
+        .delete(tempoMapSections)
+        .where(eq(tempoMapSections.tempoMapId, tempoMapId))
+        .run();
+
+      await db
+        .update(tempoMaps)
+        .set({ updatedAt: new Date() })
+        .where(eq(tempoMaps.id, tempoMapId))
+        .run();
+
+      return NextResponse.json({ success: true, cleared: true });
+    }
 
     if (!sectionId) {
       return NextResponse.json({ error: 'Section ID is required' }, { status: 400 });
@@ -193,27 +226,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Section not found' }, { status: 404 });
     }
 
+    const deletedPosition = section.position;
+
     // Delete section
     await db
       .delete(tempoMapSections)
       .where(eq(tempoMapSections.id, sectionId))
       .run();
-
-    // Reorder remaining sections
-    const remainingSections = await db
-      .select()
-      .from(tempoMapSections)
-      .where(eq(tempoMapSections.tempoMapId, tempoMapId))
-      .orderBy(asc(tempoMapSections.position))
-      .all();
-
-    for (let i = 0; i < remainingSections.length; i++) {
-      await db
-        .update(tempoMapSections)
-        .set({ position: i + 1 })
-        .where(eq(tempoMapSections.id, remainingSections[i].id))
-        .run();
-    }
 
     // Update tempo map timestamp
     await db
