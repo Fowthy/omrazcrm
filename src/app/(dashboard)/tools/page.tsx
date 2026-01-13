@@ -28,8 +28,14 @@ import {
   Music,
   Waves,
   Hand,
+  Piano,
+  Mic,
+  Ear,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PianoKeyboard } from '@/components/tools/piano-keyboard';
+import { Tuner } from '@/components/tools/tuner';
+import { EarTraining } from '@/components/tools/ear-training';
 
 // ============================================
 // AUDIO UTILITIES
@@ -2178,6 +2184,18 @@ export default function ToolsPage() {
             <Music className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Intervals</span>
           </TabsTrigger>
+          <TabsTrigger value="piano" className="gap-1.5 text-xs sm:text-sm">
+            <Piano className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Piano</span>
+          </TabsTrigger>
+          <TabsTrigger value="tuner" className="gap-1.5 text-xs sm:text-sm">
+            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Tuner</span>
+          </TabsTrigger>
+          <TabsTrigger value="ear-training" className="gap-1.5 text-xs sm:text-sm">
+            <Ear className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Ear Training</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="metronome">
@@ -2215,6 +2233,18 @@ export default function ToolsPage() {
 
         <TabsContent value="intervals">
           <IntervalCalculator />
+        </TabsContent>
+
+        <TabsContent value="piano">
+          <PianoKeyboard />
+        </TabsContent>
+
+        <TabsContent value="tuner">
+          <Tuner />
+        </TabsContent>
+
+        <TabsContent value="ear-training">
+          <EarTraining />
         </TabsContent>
       </Tabs>
     </div>
