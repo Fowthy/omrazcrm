@@ -80,37 +80,40 @@ export function Header() {
     <header
       className={cn(
         'fixed right-0 top-0 z-30 flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-950/80 px-4 backdrop-blur-sm transition-all duration-300',
-        isCollapsed ? 'left-16' : 'left-64'
+        // Desktop: offset by sidebar width
+        isCollapsed ? 'lg:left-16' : 'lg:left-64',
+        // Mobile: full width
+        'left-0'
       )}
     >
       {/* Mobile Menu Button */}
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="lg:hidden shrink-0"
         onClick={toggleMobileOpen}
       >
         <Menu className="h-5 w-5" />
       </Button>
 
       {/* Project Selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 lg:gap-3 flex-1 lg:flex-none min-w-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="flex items-center gap-2 border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800"
+              className="flex items-center gap-2 border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800 min-w-0"
             >
-              <FolderKanban className="h-4 w-4 text-violet-400" />
+              <FolderKanban className="h-4 w-4 text-violet-400 shrink-0" />
               {activeProject ? (
                 <>
-                  <span className="max-w-[150px] truncate">{activeProject.name}</span>
-                  <span className={cn('h-2 w-2 rounded-full', getStatusColor(activeProject.status))} />
+                  <span className="max-w-[80px] sm:max-w-[150px] truncate">{activeProject.name}</span>
+                  <span className={cn('h-2 w-2 rounded-full shrink-0', getStatusColor(activeProject.status))} />
                 </>
               ) : (
-                <span className="text-zinc-400">Select Project</span>
+                <span className="text-zinc-400 hidden sm:inline">Select Project</span>
               )}
-              <ChevronDown className="h-4 w-4 text-zinc-400" />
+              <ChevronDown className="h-4 w-4 text-zinc-400 shrink-0" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-64">
@@ -160,9 +163,9 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Active Project Badge */}
+        {/* Active Project Badge - Hidden on mobile */}
         {activeProject && (
-          <Link href={`/projects/${activeProject.id}`}>
+          <Link href={`/projects/${activeProject.id}`} className="hidden sm:block">
             <Badge
               variant="secondary"
               className="cursor-pointer bg-violet-500/20 text-violet-400 hover:bg-violet-500/30"
@@ -176,11 +179,11 @@ export function Header() {
       {/* Search */}
       <button
         onClick={toggleCommandPalette}
-        className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-300"
+        className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-2 sm:px-4 py-2 text-sm text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-300 shrink-0"
       >
         <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">Search everything...</span>
-        <kbd className="hidden rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-500 sm:inline">
+        <span className="hidden md:inline">Search everything...</span>
+        <kbd className="hidden rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-500 md:inline">
           ⌘K
         </kbd>
       </button>

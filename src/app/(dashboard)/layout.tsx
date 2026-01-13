@@ -65,10 +65,13 @@ export default function DashboardLayout({
       <main
         className={cn(
           'min-h-screen pt-16 transition-all duration-300 relative z-10',
-          isCollapsed ? 'pl-16' : 'pl-64'
+          // Desktop: offset by sidebar width
+          isCollapsed ? 'lg:pl-16' : 'lg:pl-64',
+          // Mobile: no padding (sidebar is overlay)
+          'pl-0'
         )}
       >
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
 
       {/* Onboarding Components */}
