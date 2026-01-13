@@ -30,6 +30,7 @@ import {
   Wrench,
   Timer,
   Sparkles,
+  Piano,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,6 +58,7 @@ const workNavItems = [
   { href: '/tempo-maps', label: 'Tempo Maps', icon: Timer },
   { href: '/visualizations', label: 'Visualizations', icon: Sparkles },
   { href: '/tools', label: 'Tools', icon: Wrench },
+  { href: '/midi-builder', label: 'MIDI Builder', icon: Piano },
 ];
 
 const resourcesNavItems = [
