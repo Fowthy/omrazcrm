@@ -275,6 +275,10 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
   const [isSaving, setIsSaving] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
+  // Loading states for operations
+  const [loadingOperation, setLoadingOperation] = useState<string | null>(null);
+  const [loadingSectionId, setLoadingSectionId] = useState<string | null>(null);
+
   // Edit form state
   const [editData, setEditData] = useState({
     name: '',
@@ -303,6 +307,11 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
       return res.json();
     },
   });
+
+  // Optimistic update helper
+  const optimisticUpdate = (updater: (old: TempoMap | undefined) => TempoMap | undefined) => {
+    queryClient.setQueryData(['tempoMap', id], updater);
+  };
 
   // Fetch projects for linking
   const { data: projects } = useQuery<Project[]>({
@@ -460,10 +469,35 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
     setCurrentBeat(0);
   };
 
-  // Quick add section (no dialog)
+  // Quick add section (no dialog) with optimistic update
   const handleQuickAddSection = async (name: string, bars: number) => {
-    if (!tempoMap) return;
+    if (!tempoMap || loadingOperation) return;
 
+    const tempId = `temp-${Date.now()}`;
+    const newSection: TempoMapSection = {
+      id: tempId,
+      tempoMapId: id,
+      position: tempoMap.sections.length + 1,
+      name,
+      bars,
+      bpm: tempoMap.defaultBpm,
+      timeSignatureNumerator: parseInt(tempoMap.defaultTimeSignature.split('/')[0]) || 4,
+      timeSignatureDenominator: parseInt(tempoMap.defaultTimeSignature.split('/')[1]) || 4,
+      notes: null,
+    };
+
+    // Optimistic update - add section immediately
+    optimisticUpdate((old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        sections: [...old.sections, newSection],
+        sectionCount: old.sectionCount + 1,
+        totalBars: old.totalBars + bars,
+      };
+    });
+
+    setLoadingOperation(`add-${name}`);
     try {
       const res = await fetch(`/api/tempo-maps/${id}/sections`, {
         method: 'POST',
@@ -480,14 +514,20 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
 
       if (!res.ok) throw new Error('Failed to add section');
       toast.success(`Added ${name} (${bars} bars)`);
-      refetch();
+      refetch(); // Sync with server
     } catch (error) {
       toast.error('Failed to add section');
+      refetch(); // Revert on error
+    } finally {
+      setLoadingOperation(null);
     }
   };
 
   // Duplicate section
   const handleDuplicateSection = async (section: TempoMapSection) => {
+    if (loadingSectionId) return;
+
+    setLoadingSectionId(section.id);
     try {
       const res = await fetch(`/api/tempo-maps/${id}/sections`, {
         method: 'POST',
@@ -507,34 +547,41 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
       refetch();
     } catch (error) {
       toast.error('Failed to duplicate section');
+    } finally {
+      setLoadingSectionId(null);
     }
   };
 
-  // Import template
+  // Import template (batch API)
   const handleImportTemplate = async (template: typeof DEMO_TEMPLATES[0]) => {
-    if (!tempoMap) return;
+    if (!tempoMap || loadingOperation) return;
 
+    setLoadingOperation('import');
     try {
-      // Add each section from template
-      for (const section of template.sections) {
-        await fetch(`/api/tempo-maps/${id}/sections`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: section.name,
-            bars: section.bars,
-            bpm: tempoMap.defaultBpm,
-            timeSignatureNumerator: parseInt(tempoMap.defaultTimeSignature.split('/')[0]) || 4,
-            timeSignatureDenominator: parseInt(tempoMap.defaultTimeSignature.split('/')[1]) || 4,
-            notes: null,
-          }),
-        });
-      }
+      // Batch add all sections at once
+      const sections = template.sections.map(section => ({
+        name: section.name,
+        bars: section.bars,
+        bpm: tempoMap.defaultBpm,
+        timeSignatureNumerator: parseInt(tempoMap.defaultTimeSignature.split('/')[0]) || 4,
+        timeSignatureDenominator: parseInt(tempoMap.defaultTimeSignature.split('/')[1]) || 4,
+        notes: null,
+      }));
+
+      const res = await fetch(`/api/tempo-maps/${id}/sections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections }),
+      });
+
+      if (!res.ok) throw new Error('Failed to import template');
 
       toast.success(`Imported "${template.name}" template`);
       refetch();
     } catch (error) {
       toast.error('Failed to import template');
+    } finally {
+      setLoadingOperation(null);
     }
   };
 
@@ -598,8 +645,25 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Delete section
+  // Delete section with optimistic update
   const handleDeleteSection = async (sectionId: string) => {
+    if (loadingSectionId || !tempoMap) return;
+
+    const sectionToDelete = tempoMap.sections.find(s => s.id === sectionId);
+    if (!sectionToDelete) return;
+
+    // Optimistic update - remove section immediately
+    optimisticUpdate((old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        sections: old.sections.filter(s => s.id !== sectionId),
+        sectionCount: old.sectionCount - 1,
+        totalBars: old.totalBars - sectionToDelete.bars,
+      };
+    });
+
+    setLoadingSectionId(sectionId);
     try {
       const res = await fetch(`/api/tempo-maps/${id}/sections?sectionId=${sectionId}`, {
         method: 'DELETE',
@@ -608,9 +672,12 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
       if (!res.ok) throw new Error('Failed to delete section');
 
       toast.success('Section deleted');
-      refetch();
+      refetch(); // Sync with server
     } catch (error) {
       toast.error('Failed to delete section');
+      refetch(); // Revert on error
+    } finally {
+      setLoadingSectionId(null);
     }
   };
 
@@ -646,20 +713,39 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  // Clear all sections
+  // Clear all sections (batch API) with optimistic update
   const handleClearAll = async () => {
-    if (!tempoMap || tempoMap.sections.length === 0) return;
+    if (!tempoMap || tempoMap.sections.length === 0 || loadingOperation) return;
 
+    const previousSections = tempoMap.sections;
+
+    // Optimistic update - clear immediately
+    optimisticUpdate((old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        sections: [],
+        sectionCount: 0,
+        totalBars: 0,
+        totalDuration: 0,
+      };
+    });
+
+    setLoadingOperation('clear');
     try {
-      for (const section of tempoMap.sections) {
-        await fetch(`/api/tempo-maps/${id}/sections?sectionId=${section.id}`, {
-          method: 'DELETE',
-        });
-      }
+      const res = await fetch(`/api/tempo-maps/${id}/sections?clearAll=true`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to clear sections');
+
       toast.success('All sections cleared');
       refetch();
     } catch (error) {
       toast.error('Failed to clear sections');
+      refetch(); // Revert on error
+    } finally {
+      setLoadingOperation(null);
     }
   };
 
@@ -911,8 +997,13 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
                       variant="ghost"
                       className={cn('h-8', preset.color)}
                       onClick={() => handleQuickAddSection(preset.name, preset.bars)}
+                      disabled={loadingOperation !== null}
                     >
-                      <Plus className="h-3 w-3 mr-1" />
+                      {loadingOperation === `add-${preset.name}` ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Plus className="h-3 w-3 mr-1" />
+                      )}
                       {preset.name}
                     </Button>
                   </TooltipTrigger>
@@ -923,9 +1014,13 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
               {/* Import template dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-8 ml-auto">
-                    <Download className="h-3 w-3 mr-1" />
-                    Import Template
+                  <Button size="sm" variant="outline" className="h-8 ml-auto" disabled={loadingOperation !== null}>
+                    {loadingOperation === 'import' || loadingOperation === 'clear' ? (
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="h-3 w-3 mr-1" />
+                    )}
+                    {loadingOperation === 'import' ? 'Importing...' : loadingOperation === 'clear' ? 'Clearing...' : 'Import Template'}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
@@ -1105,8 +1200,13 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
                             size="icon"
                             className="h-8 w-8 opacity-50 hover:opacity-100"
                             onClick={() => handleDuplicateSection(section)}
+                            disabled={loadingSectionId === section.id}
                           >
-                            <Copy className="h-4 w-4" />
+                            {loadingSectionId === section.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Duplicate</TooltipContent>
@@ -1120,8 +1220,13 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
                             size="icon"
                             className="h-8 w-8 text-red-400 opacity-50 hover:opacity-100 hover:text-red-300"
                             onClick={() => handleDeleteSection(section.id)}
+                            disabled={loadingSectionId === section.id}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {loadingSectionId === section.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Delete</TooltipContent>
