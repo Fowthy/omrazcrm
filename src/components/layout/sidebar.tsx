@@ -29,6 +29,7 @@ import {
   Image as ImageIcon,
   Wrench,
   Timer,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -54,6 +55,7 @@ const workNavItems = [
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/tempo-maps', label: 'Tempo Maps', icon: Timer },
+  { href: '/visualizations', label: 'Visualizations', icon: Sparkles },
   { href: '/tools', label: 'Tools', icon: Wrench },
 ];
 

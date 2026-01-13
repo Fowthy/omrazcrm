@@ -545,3 +545,28 @@ export const tempoMapSections = sqliteTable('tempo_map_sections', {
   notes: text('notes'), // Any notes for this section
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
+
+// ============================================
+// VISUALIZATIONS
+// ============================================
+
+export const visualizations = sqliteTable('visualizations', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  // Visualization type and parameters
+  visualType: text('visual_type').notNull().default('bars'), // bars, waveform, circular, particles, kaleidoscope, geometric
+  // Parameters stored as JSON
+  parameters: text('parameters').notNull(), // JSON: { colorScheme, sensitivity, particleCount, speed, etc. }
+  // Preview and export
+  previewUrl: text('preview_url'), // Thumbnail/preview image
+  videoUrl: text('video_url'), // Exported video file path
+  videoDuration: integer('video_duration'), // Duration in seconds
+  // Links
+  songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  // Metadata
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+});
