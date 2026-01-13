@@ -33,7 +33,7 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    // Match all paths except static files, _next, and api routes
-    '/((?!_next/static|_next/image|favicon.ico|uploads).*)',
+    // Match all paths except static files, _next, api routes, and public assets
+    '/((?!_next/static|_next/image|favicon.ico|uploads|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.svg$|.*\\.gif$|.*\\.webp$).*)',
   ],
 };
