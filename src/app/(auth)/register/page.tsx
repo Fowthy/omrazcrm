@@ -80,16 +80,10 @@ export default function RegisterPage() {
           src="/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg"
           alt=""
           fill
-          className="object-cover opacity-30"
+          className="object-cover opacity-60"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/60 via-zinc-950/80 to-zinc-950" />
-      </div>
-
-      {/* Gradient Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-violet-600/20 blur-3xl" />
-        <div className="absolute -bottom-1/4 -right-1/4 h-1/2 w-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute inset-0 bg-zinc-950/40" />
       </div>
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">

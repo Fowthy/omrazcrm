@@ -115,26 +115,16 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className={cn('flex h-16 items-center border-b border-zinc-800 px-4', isCollapsed && 'justify-center px-2')}>
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="relative h-10 w-10 overflow-hidden rounded-lg">
+          <Link href="/dashboard" className="flex items-center">
+            <div className={cn('relative overflow-hidden', isCollapsed ? 'h-10 w-10' : 'h-10 w-32')}>
               <Image
                 src="/White over trans.png"
                 alt="Omraz"
                 fill
-                className="object-cover"
+                className="object-contain"
                 priority
               />
             </div>
-            {!isCollapsed && (
-              <div className="relative h-8 w-24">
-                <Image
-                  src="/White over trans.png"
-                  alt="Omraz"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            )}
           </Link>
         </div>
 
