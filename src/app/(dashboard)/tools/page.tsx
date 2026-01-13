@@ -2147,56 +2147,58 @@ export default function ToolsPage() {
       </div>
 
       <Tabs defaultValue="metronome" className="space-y-6">
-        <TabsList className="flex flex-wrap h-auto gap-1 bg-zinc-900/50 p-1">
-          <TabsTrigger value="metronome" className="gap-1.5 text-xs sm:text-sm">
-            <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Metronome</span>
-          </TabsTrigger>
-          <TabsTrigger value="drums" className="gap-1.5 text-xs sm:text-sm">
-            <Drum className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Drums</span>
-          </TabsTrigger>
-          <TabsTrigger value="polyrhythm" className="gap-1.5 text-xs sm:text-sm">
-            <Drum className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Polyrhythm</span>
-          </TabsTrigger>
-          <TabsTrigger value="modulation" className="gap-1.5 text-xs sm:text-sm">
-            <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Modulation</span>
-          </TabsTrigger>
-          <TabsTrigger value="delay" className="gap-1.5 text-xs sm:text-sm">
-            <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Delay</span>
-          </TabsTrigger>
-          <TabsTrigger value="songtime" className="gap-1.5 text-xs sm:text-sm">
-            <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Duration</span>
-          </TabsTrigger>
-          <TabsTrigger value="markings" className="gap-1.5 text-xs sm:text-sm">
-            <Music className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Markings</span>
-          </TabsTrigger>
-          <TabsTrigger value="frequency" className="gap-1.5 text-xs sm:text-sm">
-            <Waves className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Frequency</span>
-          </TabsTrigger>
-          <TabsTrigger value="intervals" className="gap-1.5 text-xs sm:text-sm">
-            <Music className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Intervals</span>
-          </TabsTrigger>
-          <TabsTrigger value="piano" className="gap-1.5 text-xs sm:text-sm">
-            <Piano className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Piano</span>
-          </TabsTrigger>
-          <TabsTrigger value="tuner" className="gap-1.5 text-xs sm:text-sm">
-            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Tuner</span>
-          </TabsTrigger>
-          <TabsTrigger value="ear-training" className="gap-1.5 text-xs sm:text-sm">
-            <Ear className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Ear Training</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex h-auto gap-1 bg-zinc-900/50 p-1 min-w-max sm:flex sm:flex-wrap">
+            <TabsTrigger value="metronome" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Metronome</span>
+            </TabsTrigger>
+            <TabsTrigger value="drums" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Drum className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Drums</span>
+            </TabsTrigger>
+            <TabsTrigger value="polyrhythm" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Drum className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Polyrhythm</span>
+            </TabsTrigger>
+            <TabsTrigger value="modulation" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Modulation</span>
+            </TabsTrigger>
+            <TabsTrigger value="delay" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Delay</span>
+            </TabsTrigger>
+            <TabsTrigger value="songtime" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Timer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Duration</span>
+            </TabsTrigger>
+            <TabsTrigger value="markings" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Music className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Markings</span>
+            </TabsTrigger>
+            <TabsTrigger value="frequency" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Waves className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Frequency</span>
+            </TabsTrigger>
+            <TabsTrigger value="intervals" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Music className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Intervals</span>
+            </TabsTrigger>
+            <TabsTrigger value="piano" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Piano className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Piano</span>
+            </TabsTrigger>
+            <TabsTrigger value="tuner" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Tuner</span>
+            </TabsTrigger>
+            <TabsTrigger value="ear-training" className="gap-1.5 text-xs sm:text-sm whitespace-nowrap">
+              <Ear className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Ear Training</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="metronome">
           <Metronome />
