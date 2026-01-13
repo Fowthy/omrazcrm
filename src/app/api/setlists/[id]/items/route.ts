@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { setlistItems, songs } from '@/lib/db/schema';
 import { eq, and, asc, gt, gte } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function POST(
   request: Request,

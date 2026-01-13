@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {

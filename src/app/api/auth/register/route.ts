@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {

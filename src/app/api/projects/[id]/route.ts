@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db, projects, songs, files, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,

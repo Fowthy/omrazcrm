@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { db, gearMaintenance, gearItems } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,

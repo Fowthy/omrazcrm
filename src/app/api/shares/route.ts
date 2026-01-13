@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
   shareLinks,
   projects,
   songs,
@@ -15,6 +17,8 @@ import {
 } from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 // Share types supported
 export const SHARE_TYPES = [

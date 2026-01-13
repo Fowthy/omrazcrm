@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { setlists, setlistItems, songs, users } from '@/lib/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,
