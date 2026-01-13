@@ -277,6 +277,12 @@ export default function MidiBuilderPage() {
   const [loopStart, setLoopStart] = useState(0);
   const [loopEnd, setLoopEnd] = useState(4);
 
+  // Drawing state for click-and-drag note creation
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingNoteId, setDrawingNoteId] = useState<string | null>(null);
+  const [drawingTrackIndex, setDrawingTrackIndex] = useState<number | null>(null);
+  const [drawStartBeat, setDrawStartBeat] = useState(0);
+
   // API queries and mutations
   const { data: savedProjects = [], isLoading: isLoadingProjects } = useQuery<MidiProject[]>({
     queryKey: ['midi-projects'],
@@ -544,8 +550,8 @@ export default function MidiBuilderPage() {
     });
   };
 
-  // Handle piano roll click
-  const handlePianoRollClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Handle piano roll mouse down - start drawing a note
+  const handlePianoRollMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (tool !== 'draw') return;
 
     const rect = e.currentTarget.getBoundingClientRect();
@@ -555,11 +561,83 @@ export default function MidiBuilderPage() {
     if (x < 0) return;
 
     const beat = x / zoom;
+    const snap = snapToGrid ? Math.round(beat / gridSize) * gridSize : beat;
     const noteIndex = Math.floor(y / noteHeight);
     const pitch = (OCTAVES[OCTAVES.length - 1] + 1) * 12 + 11 - noteIndex;
 
     if (pitch >= 0 && pitch < 128) {
-      addNote(selectedTrack, pitch, beat);
+      // Create a new note with minimum duration
+      const noteId = generateId();
+      const note: Note = {
+        id: noteId,
+        pitch,
+        start: snap,
+        duration: gridSize, // Start with minimum grid size duration
+        velocity: 100,
+      };
+
+      setTracks(prev => prev.map((track, i) =>
+        i === selectedTrack
+          ? { ...track, notes: [...track.notes, note] }
+          : track
+      ));
+
+      // Play preview
+      playNote(pitch, 0.3, 100, tracks[selectedTrack].instrument);
+
+      // Set drawing state
+      setIsDrawing(true);
+      setDrawingNoteId(noteId);
+      setDrawingTrackIndex(selectedTrack);
+      setDrawStartBeat(snap);
+    }
+  };
+
+  // Handle piano roll mouse move - extend note while drawing
+  const handlePianoRollMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDrawing || !drawingNoteId || drawingTrackIndex === null) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+
+    if (x < 0) return;
+
+    const beat = x / zoom;
+    const snap = snapToGrid ? Math.round(beat / gridSize) * gridSize : beat;
+
+    // Calculate new duration (minimum of 1 grid unit)
+    const newDuration = Math.max(gridSize, snap - drawStartBeat);
+
+    // Update the note's duration
+    setTracks(prev => prev.map((track, i) =>
+      i === drawingTrackIndex
+        ? {
+            ...track,
+            notes: track.notes.map(n =>
+              n.id === drawingNoteId
+                ? { ...n, duration: newDuration }
+                : n
+            )
+          }
+        : track
+    ));
+  };
+
+  // Handle piano roll mouse up - finish drawing
+  const handlePianoRollMouseUp = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      setDrawingNoteId(null);
+      setDrawingTrackIndex(null);
+    }
+  };
+
+  // Handle mouse leave - also stop drawing
+  const handlePianoRollMouseLeave = () => {
+    if (isDrawing) {
+      setIsDrawing(false);
+      setDrawingNoteId(null);
+      setDrawingTrackIndex(null);
     }
   };
 
@@ -581,6 +659,20 @@ export default function MidiBuilderPage() {
       stopPlayback();
     };
   }, [stopPlayback]);
+
+  // Global mouseup handler for drawing - ensures drawing stops even if mouse released outside
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDrawing) {
+        setIsDrawing(false);
+        setDrawingNoteId(null);
+        setDrawingTrackIndex(null);
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [isDrawing]);
 
   const currentTrack = tracks[selectedTrack];
 
@@ -830,7 +922,7 @@ export default function MidiBuilderPage() {
         </div>
 
         {/* Piano roll */}
-        <div className="flex-1 overflow-auto bg-zinc-950" ref={pianoRollRef}>
+        <div className="flex-1 overflow-auto" ref={pianoRollRef}>
           <div
             className="relative flex"
             style={{
@@ -871,9 +963,17 @@ export default function MidiBuilderPage() {
 
             {/* Grid */}
             <div
-              className="relative flex-1"
+              className={cn(
+                "relative flex-1",
+                tool === 'draw' && 'cursor-crosshair',
+                tool === 'erase' && 'cursor-pointer',
+                isDrawing && 'cursor-ew-resize'
+              )}
               style={{ width: totalBeats * zoom }}
-              onClick={handlePianoRollClick}
+              onMouseDown={handlePianoRollMouseDown}
+              onMouseMove={handlePianoRollMouseMove}
+              onMouseUp={handlePianoRollMouseUp}
+              onMouseLeave={handlePianoRollMouseLeave}
             >
               {/* Beat lines */}
               {Array.from({ length: totalBeats + 1 }).map((_, i) => (
@@ -942,7 +1042,7 @@ export default function MidiBuilderPage() {
                         width: note.duration * zoom - 2,
                         height: noteHeight - 2,
                       }}
-                      onClick={e => {
+                      onMouseDown={e => {
                         e.stopPropagation();
                         if (!isCurrentTrack) {
                           // Click on other track's note selects that track
