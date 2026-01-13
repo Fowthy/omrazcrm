@@ -162,17 +162,27 @@ export const comments = sqliteTable('comments', {
 export const shareLinks = sqliteTable('share_links', {
   id: text('id').primaryKey(),
   token: text('token').notNull().unique(),
+  name: text('name'), // Custom name for the share link
+  shareType: text('share_type').notNull(), // project, song, file, setlist, rehearsal, show, media, tempo-map
   password: text('password'),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
   allowDownload: integer('allow_download', { mode: 'boolean' }).default(false),
   viewCount: integer('view_count').default(0),
   maxViews: integer('max_views'),
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  // Configuration for what to include (JSON) - used for project sharing
+  includeConfig: text('include_config'), // JSON: { songs: true, files: true, setlists: false, ... }
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
-  projectId: text('project_id').references(() => projects.id),
-  songId: text('song_id').references(() => songs.id),
-  fileId: text('file_id').references(() => files.id),
+  // Entity references - only one will be set based on shareType
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  songId: text('song_id').references(() => songs.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').references(() => files.id, { onDelete: 'cascade' }),
+  setlistId: text('setlist_id'), // References setlists.id
+  rehearsalId: text('rehearsal_id'), // References rehearsals.id
+  showId: text('show_id'), // References shows.id
+  mediaId: text('media_id'), // References media.id
+  tempoMapId: text('tempo_map_id'), // References tempoMaps.id
 });
 
 // ============================================

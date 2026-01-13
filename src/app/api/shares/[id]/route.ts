@@ -61,11 +61,15 @@ export async function PATCH(
 
     const updateData: Record<string, unknown> = {};
 
+    if (body.name !== undefined) updateData.name = body.name;
     if (body.password !== undefined) updateData.password = body.password;
     if (body.expiresAt !== undefined) updateData.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
     if (body.allowDownload !== undefined) updateData.allowDownload = body.allowDownload;
     if (body.maxViews !== undefined) updateData.maxViews = body.maxViews;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
+    if (body.includeConfig !== undefined) {
+      updateData.includeConfig = body.includeConfig ? JSON.stringify(body.includeConfig) : null;
+    }
 
     await db
       .update(shareLinks)
