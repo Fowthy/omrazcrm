@@ -405,6 +405,37 @@ export const bandSettings = sqliteTable('band_settings', {
   timezone: text('timezone').default('UTC').notNull(),
   currency: text('currency').default('USD').notNull(),
   defaultShareExpiry: integer('default_share_expiry'),
+  youtubeChannelId: text('youtube_channel_id'),
+  youtubeChannelName: text('youtube_channel_name'),
+});
+
+// ============================================
+// MEDIA GALLERY
+// ============================================
+
+export const media = sqliteTable('media', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: text('type').notNull(), // photo, video, youtube
+  category: text('category').notNull(), // photoshoot, music_video, promo, behind_the_scenes, live, interview, other
+  // For file uploads
+  filePath: text('file_path'),
+  mimeType: text('mime_type'),
+  fileSize: integer('file_size'),
+  // For YouTube videos
+  youtubeUrl: text('youtube_url'),
+  youtubeVideoId: text('youtube_video_id'),
+  youtubeThumbnail: text('youtube_thumbnail'),
+  // Common fields
+  tags: text('tags'), // Comma-separated tags
+  date: integer('date', { mode: 'timestamp' }), // When the media was created/shot
+  duration: integer('duration'), // For videos, in seconds
+  width: integer('width'),
+  height: integer('height'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
 });
 
 // ============================================

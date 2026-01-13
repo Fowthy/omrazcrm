@@ -26,6 +26,7 @@ import {
   LogOut,
   Book,
   X,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -53,6 +54,7 @@ const workNavItems = [
 ];
 
 const resourcesNavItems = [
+  { href: '/media', label: 'Media', icon: ImageIcon },
   { href: '/finances', label: 'Finances', icon: Wallet },
   { href: '/gear', label: 'Gear', icon: Guitar },
   { href: '/merch', label: 'Merch', icon: Package },
