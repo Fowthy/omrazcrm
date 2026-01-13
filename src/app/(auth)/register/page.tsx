@@ -75,7 +75,7 @@ export default function RegisterPage() {
     <div
       className="min-h-screen relative flex items-center justify-center p-4"
       style={{
-        backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg")',
+        backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2%20(2)%20(1).jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
@@ -87,7 +87,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto h-12 w-40">
             <img
-              src="/White over trans.png"
+              src="/White%20over%20trans.png"
               alt="Omraz"
               className="h-full w-full object-contain"
             />
