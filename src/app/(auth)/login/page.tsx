@@ -7,7 +7,7 @@ import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="fixed inset-0 bg-black/50 pointer-events-none" />
+      <div className="fixed inset-0 bg-black/70 pointer-events-none" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">

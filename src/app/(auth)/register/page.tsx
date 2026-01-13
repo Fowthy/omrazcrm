@@ -81,7 +81,7 @@ export default function RegisterPage() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="fixed inset-0 bg-black/50 pointer-events-none" />
+      <div className="fixed inset-0 bg-black/70 pointer-events-none" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
