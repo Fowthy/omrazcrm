@@ -118,7 +118,7 @@ export function Sidebar() {
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-lg">
               <Image
-                src="/logo.svg"
+                src="/logo.png"
                 alt="Omraz"
                 fill
                 className="object-cover"
@@ -128,7 +128,7 @@ export function Sidebar() {
             {!isCollapsed && (
               <div className="relative h-8 w-24">
                 <Image
-                  src="/logo.svg"
+                  src="/logo.png"
                   alt="Omraz"
                   fill
                   className="object-contain"
