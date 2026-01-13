@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store';
@@ -113,12 +114,20 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className={cn('flex h-16 items-center border-b border-zinc-800 px-4', isCollapsed && 'justify-center px-2')}>
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500">
-              <Music className="h-5 w-5 text-white" />
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="relative h-10 w-10 overflow-hidden rounded-lg">
+              <Image
+                src="/logo.png"
+                alt="Omraz"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
             {!isCollapsed && (
-              <span className="text-lg font-bold text-white">Omraz Studio</span>
+              <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                Omraz
+              </span>
             )}
           </Link>
         </div>

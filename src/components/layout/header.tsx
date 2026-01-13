@@ -1,8 +1,9 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useSidebarStore, useCommandPaletteStore, useNotificationStore, useThemeStore } from '@/store';
-import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { useSidebarStore, useCommandPaletteStore, useNotificationStore, useThemeStore, useProjectStore } from '@/store';
+import { cn, projectStatuses } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,9 +24,20 @@ import {
   User,
   Settings,
   LogOut,
+  FolderKanban,
+  ChevronDown,
+  X,
+  Check,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
+
+interface Project {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
 
 export function Header() {
   const { data: session } = useSession();
@@ -33,6 +45,17 @@ export function Header() {
   const { toggle: toggleCommandPalette } = useCommandPaletteStore();
   const { unreadCount } = useNotificationStore();
   const { theme, toggleTheme } = useThemeStore();
+  const { activeProject, setActiveProject, clearActiveProject } = useProjectStore();
+
+  // Fetch projects for selector
+  const { data: projects } = useQuery<Project[]>({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const res = await fetch('/api/projects');
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
 
   const user = session?.user;
   const initials = user?.name
@@ -40,6 +63,18 @@ export function Header() {
     .map((n) => n[0])
     .join('')
     .toUpperCase() || 'U';
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      idea: 'bg-gray-500',
+      writing: 'bg-blue-500',
+      recording: 'bg-yellow-500',
+      mixing: 'bg-orange-500',
+      mastering: 'bg-purple-500',
+      released: 'bg-green-500',
+    };
+    return colors[status] || 'bg-gray-500';
+  };
 
   return (
     <header
@@ -57,6 +92,86 @@ export function Header() {
       >
         <Menu className="h-5 w-5" />
       </Button>
+
+      {/* Project Selector */}
+      <div className="flex items-center gap-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800"
+            >
+              <FolderKanban className="h-4 w-4 text-violet-400" />
+              {activeProject ? (
+                <>
+                  <span className="max-w-[150px] truncate">{activeProject.name}</span>
+                  <span className={cn('h-2 w-2 rounded-full', getStatusColor(activeProject.status))} />
+                </>
+              ) : (
+                <span className="text-zinc-400">Select Project</span>
+              )}
+              <ChevronDown className="h-4 w-4 text-zinc-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuLabel>Active Project</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {projects && projects.length > 0 ? (
+              <>
+                {projects.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => setActiveProject(project)}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={cn('h-2 w-2 rounded-full', getStatusColor(project.status))} />
+                      <span className="truncate">{project.name}</span>
+                    </div>
+                    {activeProject?.id === project.id && (
+                      <Check className="h-4 w-4 text-violet-400" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                {activeProject && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={clearActiveProject}
+                      className="cursor-pointer text-zinc-400"
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Clear Selection
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="p-4 text-center text-sm text-zinc-400">
+                No projects yet
+              </div>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/projects" className="cursor-pointer">
+                View All Projects
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Active Project Badge */}
+        {activeProject && (
+          <Link href={`/projects/${activeProject.id}`}>
+            <Badge
+              variant="secondary"
+              className="cursor-pointer bg-violet-500/20 text-violet-400 hover:bg-violet-500/30"
+            >
+              {projectStatuses.find(s => s.value === activeProject.status)?.label || activeProject.status}
+            </Badge>
+          </Link>
+        )}
+      </div>
 
       {/* Search */}
       <button

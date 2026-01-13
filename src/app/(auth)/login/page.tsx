@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Music, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -43,19 +44,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
-      <div className="absolute inset-0 overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 relative">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/background.png"
+          alt=""
+          fill
+          className="object-cover opacity-20"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/60 via-zinc-950/80 to-zinc-950" />
+      </div>
+
+      {/* Gradient Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -left-1/4 -top-1/4 h-1/2 w-1/2 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="absolute -bottom-1/4 -right-1/4 h-1/2 w-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
       </div>
 
-      <Card className="relative w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
+      <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-cyan-500">
-            <Music className="h-8 w-8 text-white" />
+          <div className="mx-auto relative h-20 w-20 overflow-hidden rounded-2xl">
+            <Image
+              src="/logo.png"
+              alt="Omraz"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Welcome to Omraz Studio</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              Welcome to{' '}
+              <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                Omraz
+              </span>
+            </CardTitle>
             <CardDescription className="mt-2">
               Sign in to access your band management platform
             </CardDescription>

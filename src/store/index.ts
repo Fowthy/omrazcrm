@@ -128,3 +128,29 @@ export const useNotificationStore = create<NotificationState>()((set) => ({
   incrementUnread: () => set((state) => ({ unreadCount: state.unreadCount + 1 })),
   clearUnread: () => set({ unreadCount: 0 }),
 }));
+
+interface ActiveProject {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
+
+interface ProjectState {
+  activeProject: ActiveProject | null;
+  setActiveProject: (project: ActiveProject | null) => void;
+  clearActiveProject: () => void;
+}
+
+export const useProjectStore = create<ProjectState>()(
+  persist(
+    (set) => ({
+      activeProject: null,
+      setActiveProject: (project) => set({ activeProject: project }),
+      clearActiveProject: () => set({ activeProject: null }),
+    }),
+    {
+      name: 'omraz-active-project',
+    }
+  )
+);

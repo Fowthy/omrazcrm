@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,8 +47,13 @@ import {
   Share2,
   Clock,
   FolderKanban,
+  Upload,
+  File,
+  FileText,
+  Image as ImageIcon,
+  Download,
 } from 'lucide-react';
-import { projectStatuses, projectTypes, songStatuses, formatDate } from '@/lib/utils';
+import { projectStatuses, projectTypes, songStatuses, formatDate, formatFileSize } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Project {
@@ -75,11 +80,25 @@ interface Song {
   createdAt: string;
 }
 
+interface FileItem {
+  id: string;
+  name: string;
+  type: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  description: string | null;
+  createdAt: string;
+  uploadedBy: { name: string; avatar: string | null } | null;
+  currentVersion: number;
+}
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const projectId = params.id as string;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -87,6 +106,7 @@ export default function ProjectDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
 
   const [editForm, setEditForm] = useState({
     name: '',
@@ -117,6 +137,16 @@ export default function ProjectDetailPage() {
     queryKey: ['songs', { projectId }],
     queryFn: async () => {
       const res = await fetch(`/api/songs?projectId=${projectId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // Fetch files for this project
+  const { data: files, isLoading: filesLoading } = useQuery<FileItem[]>({
+    queryKey: ['files', { projectId }],
+    queryFn: async () => {
+      const res = await fetch(`/api/files?projectId=${projectId}`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -210,6 +240,44 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleFileUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+
+    setIsUploadingFile(true);
+    try {
+      for (const file of Array.from(selectedFiles)) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('projectId', projectId);
+
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['files', { projectId }] });
+      toast.success(`${selectedFiles.length} file(s) uploaded!`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload files');
+    } finally {
+      setIsUploadingFile(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       idea: 'bg-gray-500/20 text-gray-400',
@@ -227,6 +295,19 @@ export default function ProjectDetailPage() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'audio':
+        return <FileAudio className="h-5 w-5 text-violet-400" />;
+      case 'image':
+        return <ImageIcon className="h-5 w-5 text-cyan-400" />;
+      case 'document':
+        return <FileText className="h-5 w-5 text-orange-400" />;
+      default:
+        return <File className="h-5 w-5 text-zinc-400" />;
+    }
   };
 
   if (projectLoading) {
@@ -399,7 +480,7 @@ export default function ProjectDetailPage() {
       <Tabs defaultValue="songs" className="space-y-4">
         <TabsList>
           <TabsTrigger value="songs">Songs ({songs?.length || 0})</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="files">Files ({files?.length || 0})</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -456,19 +537,101 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="files" className="space-y-4">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileAudio className="h-12 w-12 text-zinc-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">No files yet</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Upload audio files, stems, and project files
-              </p>
-              <Button className="mt-4" variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Upload Files
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+
+          {filesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+            </div>
+          ) : files?.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileAudio className="h-12 w-12 text-zinc-500" />
+                <h3 className="mt-4 text-lg font-medium text-white">No files yet</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Upload audio files, stems, and project files
+                </p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={handleFileUploadClick}
+                  disabled={isUploadingFile}
+                >
+                  {isUploadingFile ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Files
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={handleFileUploadClick}
+                  disabled={isUploadingFile}
+                >
+                  {isUploadingFile ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Files
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {files?.map((file) => (
+                  <Card key={file.id} className="transition-colors hover:border-zinc-700">
+                    <CardContent className="flex items-center gap-4 py-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
+                        {getFileIcon(file.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-white truncate">{file.name}</h4>
+                        <div className="flex items-center gap-3 text-sm text-zinc-500">
+                          <span>{formatFileSize(file.size)}</span>
+                          <span>v{file.currentVersion}</span>
+                          {file.uploadedBy && <span>by {file.uploadedBy.name}</span>}
+                          <span>{formatDate(file.createdAt)}</span>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="capitalize">
+                        {file.type}
+                      </Badge>
+                      <a
+                        href={file.path}
+                        download={file.name}
+                        className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Download className="h-4 w-4 text-zinc-400" />
+                      </a>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">

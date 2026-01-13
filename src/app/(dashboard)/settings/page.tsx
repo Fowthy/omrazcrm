@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,6 @@ import {
   User,
   Bell,
   Palette,
-  Shield,
   Music,
   Loader2,
   Save,
@@ -32,16 +31,28 @@ import { instruments } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const { theme, setTheme } = useThemeStore();
-  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingBand, setIsSavingBand] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(session?.user?.avatar || '');
 
   const [profile, setProfile] = useState({
-    name: session?.user?.name || '',
-    email: session?.user?.email || '',
-    instrument: session?.user?.instrument || '',
+    name: '',
+    email: '',
+    instrument: '',
     bio: '',
     phone: '',
+  });
+
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -60,11 +71,209 @@ export default function SettingsPage() {
     defaultShareExpiry: '7',
   });
 
+  // Initialize profile from session
+  useEffect(() => {
+    if (session?.user) {
+      setProfile({
+        name: session.user.name || '',
+        email: session.user.email || '',
+        instrument: session.user.instrument || '',
+        bio: '',
+        phone: '',
+      });
+      setAvatarUrl(session.user.avatar || '');
+    }
+  }, [session]);
+
+  // Fetch band settings
+  useEffect(() => {
+    const fetchBandSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setBandSettings({
+            name: data.name || 'Omraz',
+            timezone: data.timezone || 'UTC',
+            currency: data.currency || 'USD',
+            defaultShareExpiry: data.defaultShareExpiry?.toString() || '7',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch band settings:', error);
+      }
+    };
+    fetchBandSettings();
+  }, []);
+
   const handleSaveProfile = async () => {
-    setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success('Profile updated!');
-    setIsSaving(false);
+    if (!profile.name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+    if (!profile.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update profile');
+      }
+
+      // Update the session
+      await updateSession({
+        ...session,
+        user: {
+          ...session?.user,
+          name: data.name,
+          email: data.email,
+          instrument: data.instrument,
+        },
+      });
+
+      toast.success('Profile updated!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwords.currentPassword) {
+      toast.error('Current password is required');
+      return;
+    }
+    if (!passwords.newPassword) {
+      toast.error('New password is required');
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwords.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    setIsSavingPassword(true);
+    try {
+      const res = await fetch('/api/users/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(passwords),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update password');
+      }
+
+      // Clear password fields
+      setPasswords({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+
+      toast.success('Password updated!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update password');
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type. Only JPG, PNG, GIF, and WebP are allowed.');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('File too large. Maximum size is 2MB.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/users/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload avatar');
+      }
+
+      setAvatarUrl(data.avatar);
+
+      // Update the session
+      await updateSession({
+        ...session,
+        user: {
+          ...session?.user,
+          avatar: data.avatar,
+        },
+      });
+
+      toast.success('Avatar updated!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleSaveBandSettings = async () => {
+    setIsSavingBand(true);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bandSettings),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update band settings');
+      }
+
+      toast.success('Band settings updated!');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update band settings');
+    } finally {
+      setIsSavingBand(false);
+    }
   };
 
   const user = session?.user;
@@ -116,13 +325,34 @@ export default function SettingsPage() {
               {/* Avatar */}
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.avatar || undefined} />
+                  <AvatarImage src={avatarUrl || undefined} />
                   <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <Button variant="outline" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Change Avatar
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAvatarClick}
+                    disabled={isUploadingAvatar}
+                  >
+                    {isUploadingAvatar ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Change Avatar
+                      </>
+                    )}
                   </Button>
                   <p className="mt-2 text-xs text-zinc-500">
                     JPG, PNG or GIF. Max 2MB.
@@ -192,8 +422,8 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveProfile} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                  {isSavingProfile ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving...
@@ -220,20 +450,48 @@ export default function SettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
+                  <Input
+                    id="current-password"
+                    type="password"
+                    value={passwords.currentPassword}
+                    onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                  />
                 </div>
                 <div></div>
                 <div className="space-y-2">
                   <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
+                  <Input
+                    id="new-password"
+                    type="password"
+                    value={passwords.newPassword}
+                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={passwords.confirmPassword}
+                    onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                  />
                 </div>
               </div>
               <div className="flex justify-end">
-                <Button variant="outline">Update Password</Button>
+                <Button
+                  variant="outline"
+                  onClick={handleChangePassword}
+                  disabled={isSavingPassword}
+                >
+                  {isSavingPassword ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -404,8 +662,8 @@ export default function SettingsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (???)</SelectItem>
-                      <SelectItem value="GBP">GBP (??)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
                       <SelectItem value="CAD">CAD ($)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -433,7 +691,16 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button>Save Band Settings</Button>
+                <Button onClick={handleSaveBandSettings} disabled={isSavingBand}>
+                  {isSavingBand ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Band Settings'
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
