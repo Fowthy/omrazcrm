@@ -292,11 +292,13 @@ export default function TempoMapsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {projects?.filter((p) => p.id).map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
+                    {(projects ?? []).map((project) =>
+                      project.id && project.id.length > 0 ? (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ) : null
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -312,11 +314,13 @@ export default function TempoMapsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
-                    {songs?.filter((s) => s.id).map((song) => (
-                      <SelectItem key={song.id} value={song.id}>
-                        {song.title} {song.bpm && `(${song.bpm} BPM)`}
-                      </SelectItem>
-                    ))}
+                    {(songs ?? []).map((song) =>
+                      song.id && song.id.length > 0 ? (
+                        <SelectItem key={song.id} value={song.id}>
+                          {song.title} {song.bpm && `(${song.bpm} BPM)`}
+                        </SelectItem>
+                      ) : null
+                    )}
                   </SelectContent>
                 </Select>
               </div>
