@@ -76,7 +76,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center p-4 relative bg-black">
       {/* Background Image */}
       <Image
-        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg"
+        src="/background.jpg"
         alt=""
         fill
         className="object-cover opacity-70 z-0"
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto relative h-20 w-20 overflow-hidden rounded-2xl">
             <Image
-              src="/White over trans.png"
+              src="/logo.png"
               alt="Omraz"
               fill
               className="object-cover"

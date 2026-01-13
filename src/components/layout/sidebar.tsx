@@ -118,7 +118,7 @@ export function Sidebar() {
           <Link href="/dashboard" className="flex items-center">
             <div className={cn('relative overflow-hidden', isCollapsed ? 'h-10 w-10' : 'h-10 w-32')}>
               <Image
-                src="/White over trans.png"
+                src="/logo.png"
                 alt="Omraz"
                 fill
                 className="object-contain"
