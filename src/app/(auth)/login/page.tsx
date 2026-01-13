@@ -44,18 +44,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4 relative">
+    <div className="flex min-h-screen items-center justify-center p-4 relative bg-black">
       {/* Background Image */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg"
-          alt=""
-          fill
-          className="object-cover opacity-60"
-          priority
-        />
-        <div className="absolute inset-0 bg-zinc-950/40" />
-      </div>
+      <Image
+        src="/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg"
+        alt=""
+        fill
+        className="object-cover opacity-70 z-0"
+        priority
+      />
+      <div className="absolute inset-0 bg-black/30 z-0" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
