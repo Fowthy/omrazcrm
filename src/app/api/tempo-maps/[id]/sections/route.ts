@@ -5,6 +5,9 @@ import { tempoMaps, tempoMapSections } from '@/lib/db/schema';
 import { eq, asc, gt } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 // Add a new section
 export async function POST(
   request: Request,

@@ -5,6 +5,9 @@ import { tempoMaps, tempoMapSections, projects, songs, users } from '@/lib/db/sc
 import { eq, asc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
