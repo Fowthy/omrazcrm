@@ -342,6 +342,8 @@ export default function MidiBuilderPage() {
 
   // Load a project
   const loadProject = useCallback((project: MidiProject) => {
+    // Set flag to skip the unsaved changes effect
+    isLoadingProjectRef.current = true;
     setCurrentProjectId(project.id);
     setProjectName(project.name);
     setBpm(project.bpm);
@@ -376,8 +378,16 @@ export default function MidiBuilderPage() {
     setHasUnsavedChanges(false);
   }, []);
 
+  // Ref to track if we're currently loading a project (to skip unsaved changes effect)
+  const isLoadingProjectRef = useRef(false);
+
   // Mark as having unsaved changes when tracks/bpm/totalBeats change
   useEffect(() => {
+    // Skip if we're loading a project (the changes are from loading, not user edits)
+    if (isLoadingProjectRef.current) {
+      isLoadingProjectRef.current = false;
+      return;
+    }
     if (currentProjectId) {
       setHasUnsavedChanges(true);
     }
