@@ -77,10 +77,10 @@ export default function RegisterPage() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/background.png"
+          src="/background.svg"
           alt=""
           fill
-          className="object-cover opacity-20"
+          className="object-cover opacity-30"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/60 via-zinc-950/80 to-zinc-950" />
@@ -96,7 +96,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto relative h-20 w-20 overflow-hidden rounded-2xl">
             <Image
-              src="/logo.png"
+              src="/logo.svg"
               alt="Omraz"
               fill
               className="object-cover"
@@ -105,10 +105,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">
-              Join{' '}
-              <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Omraz
-              </span>
+              Join Omraz Studio
             </CardTitle>
             <CardDescription className="mt-2">
               Create your account to get started

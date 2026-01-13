@@ -24,6 +24,7 @@ import {
   Share2,
   Package,
   LogOut,
+  Book,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -117,7 +118,7 @@ export function Sidebar() {
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="relative h-10 w-10 overflow-hidden rounded-lg">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Omraz"
                 fill
                 className="object-cover"
@@ -125,9 +126,14 @@ export function Sidebar() {
               />
             </div>
             {!isCollapsed && (
-              <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Omraz
-              </span>
+              <div className="relative h-8 w-24">
+                <Image
+                  src="/logo.svg"
+                  alt="Omraz"
+                  fill
+                  className="object-contain"
+                />
+              </div>
             )}
           </Link>
         </div>
@@ -165,6 +171,7 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-zinc-800 p-2">
+          <NavItem href="/docs" label="Documentation" icon={Book} isCollapsed={isCollapsed} />
           <NavItem href="/settings" label="Settings" icon={Settings} isCollapsed={isCollapsed} />
 
           {isCollapsed ? (
