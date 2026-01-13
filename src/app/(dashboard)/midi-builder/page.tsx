@@ -383,6 +383,20 @@ export default function MidiBuilderPage() {
     }
   }, [tracks, bpm, totalBeats]);
 
+  // Auto-load most recent project on page load
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
+  useEffect(() => {
+    if (!hasAutoLoaded && !isLoadingProjects && savedProjects.length > 0) {
+      // Sort by updatedAt descending and load the most recent
+      const sortedProjects = [...savedProjects].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      );
+      const mostRecent = sortedProjects[0];
+      loadProject(mostRecent);
+      setHasAutoLoaded(true);
+    }
+  }, [savedProjects, isLoadingProjects, hasAutoLoaded, loadProject]);
+
   // Refs
   const pianoRollRef = useRef<HTMLDivElement>(null);
   const playbackRef = useRef<{ interval: NodeJS.Timeout | null; oscillators: Map<string, OscillatorNode> }>({
@@ -677,7 +691,7 @@ export default function MidiBuilderPage() {
   const currentTrack = tracks[selectedTrack];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+    <div className="flex flex-col h-[calc(100vh-64px)] -m-4 sm:-m-6">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-4">
