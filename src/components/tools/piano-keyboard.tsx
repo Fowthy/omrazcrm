@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -168,13 +169,13 @@ export function PianoKeyboard() {
     }
   }, [sustainMode]);
 
-  // Stop all notes
+  // Stop all notes (works even in sustain mode)
   const stopAllNotes = useCallback(() => {
-    oscillatorsRef.current.forEach((active, note) => {
-      const ctx = getAudioContext();
+    const ctx = getAudioContext();
+    oscillatorsRef.current.forEach((active) => {
       active.gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
       setTimeout(() => {
-        active.oscillator.stop();
+        try { active.oscillator.stop(); } catch {}
       }, 50);
     });
     oscillatorsRef.current.clear();
@@ -383,11 +384,15 @@ export function PianoKeyboard() {
             <Label className="text-xs">Show Chord</Label>
             <Switch checked={showChord} onCheckedChange={setShowChord} />
           </div>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Sustain</Label>
+            <Switch checked={sustainMode} onCheckedChange={setSustainMode} />
+          </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="bg-emerald-200 text-emerald-800 text-xs">
           Root
         </Badge>
@@ -404,6 +409,11 @@ export function PianoKeyboard() {
         <Badge variant="outline" className="text-xs">
           Press Space to stop all
         </Badge>
+        {sustainMode && activeNotes.size > 0 && (
+          <Button size="sm" variant="destructive" className="h-6 text-xs" onClick={stopAllNotes}>
+            Release ({activeNotes.size})
+          </Button>
+        )}
       </div>
 
       {/* Piano */}

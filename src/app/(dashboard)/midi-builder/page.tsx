@@ -126,9 +126,10 @@ function createMidiFile(tracks: Track[], bpm: number): Uint8Array {
   tempoTrack.push(0, 0xff, 0x2f, 0x00);
   trackChunks.push(tempoTrack);
 
-  // Note tracks
+  // Note tracks (MIDI has max 16 channels, use channel 0-15)
   tracks.forEach((track, trackIndex) => {
     const events: { time: number; data: number[] }[] = [];
+    const channel = Math.min(trackIndex, 15); // Limit to channels 0-15
 
     // Sort notes by start time
     const sortedNotes = [...track.notes].sort((a, b) => a.start - b.start);
@@ -137,16 +138,16 @@ function createMidiFile(tracks: Track[], bpm: number): Uint8Array {
       const startTick = Math.round(note.start * ticksPerBeat);
       const endTick = Math.round((note.start + note.duration) * ticksPerBeat);
 
-      // Note on
+      // Note on (channel is 0-15)
       events.push({
         time: startTick,
-        data: [0x90 | trackIndex, note.pitch, note.velocity],
+        data: [0x90 | channel, note.pitch, note.velocity],
       });
 
       // Note off
       events.push({
         time: endTick,
-        data: [0x80 | trackIndex, note.pitch, 0],
+        data: [0x80 | channel, note.pitch, 0],
       });
     });
 
@@ -273,9 +274,8 @@ export default function MidiBuilderPage() {
 
   // Start playback
   const startPlayback = useCallback(() => {
-    const ctx = getAudioContext();
+    getAudioContext(); // Ensure audio context is initialized
     const msPerBeat = 60000 / bpm;
-    const startTime = currentBeat;
 
     setIsPlaying(true);
 
@@ -396,19 +396,16 @@ export default function MidiBuilderPage() {
   };
 
   // Handle piano roll click
-  const handlePianoRollClick = (e: React.MouseEvent) => {
+  const handlePianoRollClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (tool !== 'draw') return;
 
-    const rect = pianoRollRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const x = e.clientX - rect.left - pianoKeyWidth;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     if (x < 0) return;
 
     const beat = x / zoom;
-    const totalNotes = OCTAVES.length * 12;
     const noteIndex = Math.floor(y / noteHeight);
     const pitch = (OCTAVES[OCTAVES.length - 1] + 1) * 12 + 11 - noteIndex;
 
@@ -638,16 +635,15 @@ export default function MidiBuilderPage() {
         {/* Piano roll */}
         <div className="flex-1 overflow-auto bg-zinc-950" ref={pianoRollRef}>
           <div
-            className="relative"
+            className="relative flex"
             style={{
               width: pianoKeyWidth + totalBeats * zoom,
               height: OCTAVES.length * 12 * noteHeight,
             }}
-            onClick={handlePianoRollClick}
           >
-            {/* Piano keys */}
+            {/* Piano keys - sticky so they stay visible when scrolling */}
             <div
-              className="absolute left-0 top-0 bottom-0 bg-zinc-900 border-r border-zinc-700 z-10"
+              className="sticky left-0 top-0 bg-zinc-900 border-r border-zinc-700 z-10 shrink-0"
               style={{ width: pianoKeyWidth }}
             >
               {OCTAVES.slice().reverse().map(octave =>
@@ -658,10 +654,16 @@ export default function MidiBuilderPage() {
                     <div
                       key={`${note}${octave}`}
                       className={cn(
-                        'flex items-center justify-end pr-2 text-[10px] border-b border-zinc-800',
-                        isBlack ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-200 text-zinc-900'
+                        'flex items-center justify-end pr-2 text-[10px] border-b border-zinc-800 cursor-pointer transition-colors',
+                        isBlack
+                          ? 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                          : 'bg-zinc-200 text-zinc-900 hover:bg-zinc-300'
                       )}
                       style={{ height: noteHeight }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playNote(midi, 0.3, 100, currentTrack?.instrument || 'piano');
+                      }}
                     >
                       {note}{octave}
                     </div>
@@ -672,8 +674,9 @@ export default function MidiBuilderPage() {
 
             {/* Grid */}
             <div
-              className="absolute top-0 bottom-0"
-              style={{ left: pianoKeyWidth, width: totalBeats * zoom }}
+              className="relative flex-1"
+              style={{ width: totalBeats * zoom }}
+              onClick={handlePianoRollClick}
             >
               {/* Beat lines */}
               {Array.from({ length: totalBeats + 1 }).map((_, i) => (
@@ -713,50 +716,64 @@ export default function MidiBuilderPage() {
                 style={{ left: currentBeat * zoom }}
               />
 
-              {/* Notes */}
-              {currentTrack?.notes.map(note => {
-                const { note: noteName, octave } = getNoteFromMidi(note.pitch);
-                const rowIndex = (OCTAVES.length - 1 - OCTAVES.indexOf(octave)) * 12 + (11 - NOTE_NAMES.indexOf(noteName));
-                const isSelected = selectedNotes.has(note.id);
+              {/* Notes from all tracks */}
+              {tracks.map((track, trackIdx) =>
+                track.notes.map(note => {
+                  const { note: noteName, octave } = getNoteFromMidi(note.pitch);
+                  const rowIndex = (OCTAVES.length - 1 - OCTAVES.indexOf(octave)) * 12 + (11 - NOTE_NAMES.indexOf(noteName));
+                  const isSelected = selectedNotes.has(note.id);
+                  const isCurrentTrack = trackIdx === selectedTrack;
 
-                return (
-                  <div
-                    key={note.id}
-                    className={cn(
-                      'absolute rounded-sm cursor-pointer transition-colors',
-                      isSelected
-                        ? 'bg-primary ring-2 ring-primary'
-                        : 'bg-emerald-500 hover:bg-emerald-400'
-                    )}
-                    style={{
-                      left: note.start * zoom,
-                      top: rowIndex * noteHeight + 1,
-                      width: note.duration * zoom - 2,
-                      height: noteHeight - 2,
-                    }}
-                    onClick={e => {
-                      e.stopPropagation();
-                      if (tool === 'erase') {
-                        deleteNote(selectedTrack, note.id);
-                      } else if (tool === 'select') {
-                        setSelectedNotes(prev => {
-                          const next = new Set(prev);
-                          if (next.has(note.id)) {
-                            next.delete(note.id);
-                          } else {
-                            next.add(note.id);
-                          }
-                          return next;
-                        });
-                      }
-                    }}
-                  >
-                    <div className="text-[8px] text-white px-1 truncate">
-                      {noteName}{octave}
+                  // Skip notes outside visible octave range
+                  if (rowIndex < 0 || rowIndex >= OCTAVES.length * 12) return null;
+
+                  return (
+                    <div
+                      key={`${track.id}-${note.id}`}
+                      className={cn(
+                        'absolute rounded-sm transition-colors',
+                        isCurrentTrack ? 'cursor-pointer z-10' : 'opacity-40 z-0',
+                        isSelected
+                          ? 'bg-primary ring-2 ring-primary'
+                          : isCurrentTrack
+                            ? 'bg-emerald-500 hover:bg-emerald-400'
+                            : 'bg-blue-500'
+                      )}
+                      style={{
+                        left: note.start * zoom,
+                        top: rowIndex * noteHeight + 1,
+                        width: note.duration * zoom - 2,
+                        height: noteHeight - 2,
+                      }}
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (!isCurrentTrack) {
+                          // Click on other track's note selects that track
+                          setSelectedTrack(trackIdx);
+                          return;
+                        }
+                        if (tool === 'erase') {
+                          deleteNote(selectedTrack, note.id);
+                        } else if (tool === 'select') {
+                          setSelectedNotes(prev => {
+                            const next = new Set(prev);
+                            if (next.has(note.id)) {
+                              next.delete(note.id);
+                            } else {
+                              next.add(note.id);
+                            }
+                            return next;
+                          });
+                        }
+                      }}
+                    >
+                      <div className="text-[8px] text-white px-1 truncate">
+                        {noteName}{octave}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

@@ -101,27 +101,12 @@ export function Tuner() {
     // If too quiet, return -1
     if (rms < sensitivity) return -1;
 
-    // Normalize the buffer
-    const normalized = new Float32Array(buffer.length);
-    for (let i = 0; i < buffer.length; i++) {
-      normalized[i] = buffer[i];
-    }
-
-    // Find the first zero crossing going down
-    let start = 0;
-    for (let i = 0; i < normalized.length / 2; i++) {
-      if (normalized[i] > 0 && normalized[i + 1] <= 0) {
-        start = i;
-        break;
-      }
-    }
-
     // Autocorrelation
-    const correlations = new Float32Array(normalized.length / 2);
+    const correlations = new Float32Array(buffer.length / 2);
     for (let lag = 0; lag < correlations.length; lag++) {
       let sum = 0;
       for (let i = 0; i < correlations.length; i++) {
-        sum += normalized[i] * normalized[i + lag];
+        sum += buffer[i] * buffer[i + lag];
       }
       correlations[lag] = sum;
     }
