@@ -916,65 +916,59 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr,350px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr,380px] lg:h-[calc(100vh-220px)]">
         {/* Canvas Preview */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={450}
-              className="w-full aspect-video bg-black"
-            />
+        <Card className="overflow-hidden flex flex-col">
+          <CardContent className="p-0 flex-1 flex flex-col">
+            <div className="relative flex-1 min-h-[200px] max-h-[400px] lg:max-h-none bg-black flex items-center justify-center">
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={450}
+                className="w-full h-full object-contain"
+              />
+            </div>
             {/* Controls */}
-            <div className="p-4 border-t border-zinc-800 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="audio-upload" className="cursor-pointer">
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors">
-                    <Upload className="h-4 w-4" />
-                    <span className="text-sm">Load Audio</span>
-                  </div>
-                </Label>
-                <input
-                  id="audio-upload"
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={handleAudioUpload}
-                />
-              </div>
+            <div className="p-3 border-t border-zinc-800 flex flex-wrap items-center gap-2">
+              <Label htmlFor="audio-upload" className="cursor-pointer">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Load Audio</span>
+                </div>
+              </Label>
+              <input
+                id="audio-upload"
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handleAudioUpload}
+              />
 
               {audioUrl && (
                 <>
-                  <Button onClick={togglePlayback} size="sm">
+                  <Button onClick={togglePlayback} size="sm" className="h-8">
                     {isPlaying ? (
-                      <>
-                        <Pause className="mr-2 h-4 w-4" />
-                        Pause
-                      </>
+                      <><Pause className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Pause</span></>
                     ) : (
-                      <>
-                        <Play className="mr-2 h-4 w-4" />
-                        Play
-                      </>
+                      <><Play className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Play</span></>
                     )}
                   </Button>
-                  <span className="text-sm text-zinc-400">
+                  <span className="text-xs text-zinc-400 truncate max-w-[100px]">
                     {audioFile?.name}
                   </span>
                 </>
               )}
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto">
                 {isRecording ? (
-                  <Button onClick={stopRecording} variant="destructive" size="sm">
-                    <Video className="mr-2 h-4 w-4 animate-pulse" />
-                    Stop Recording
+                  <Button onClick={stopRecording} variant="destructive" size="sm" className="h-8">
+                    <Video className="h-3.5 w-3.5 animate-pulse sm:mr-1" />
+                    <span className="hidden sm:inline">Stop</span>
                   </Button>
                 ) : (
-                  <Button onClick={startRecording} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export Video
+                  <Button onClick={startRecording} variant="outline" size="sm" className="h-8">
+                    <Download className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Export</span>
                   </Button>
                 )}
               </div>
@@ -983,29 +977,28 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
         </Card>
 
         {/* Controls Panel */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Parameters</CardTitle>
-            <CardDescription>Customize the visualization</CardDescription>
+        <Card className="flex flex-col overflow-hidden">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="text-base">Parameters</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 overflow-y-auto pb-4">
             <Tabs defaultValue="style" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="style">
-                  <Palette className="h-4 w-4 mr-1" />
+              <TabsList className="grid w-full grid-cols-3 mb-3">
+                <TabsTrigger value="style" className="text-xs px-2">
+                  <Palette className="h-3.5 w-3.5 mr-1" />
                   Style
                 </TabsTrigger>
-                <TabsTrigger value="audio">
-                  <Music className="h-4 w-4 mr-1" />
+                <TabsTrigger value="audio" className="text-xs px-2">
+                  <Music className="h-3.5 w-3.5 mr-1" />
                   Audio
                 </TabsTrigger>
-                <TabsTrigger value="effects">
-                  <Sliders className="h-4 w-4 mr-1" />
+                <TabsTrigger value="effects" className="text-xs px-2">
+                  <Sliders className="h-3.5 w-3.5 mr-1" />
                   Effects
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="style" className="space-y-4 mt-4">
+              <TabsContent value="style" className="space-y-3 mt-0">
                 {/* Visual Type */}
                 <div className="space-y-2">
                   <Label>Visual Type</Label>
@@ -1024,30 +1017,30 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
                 </div>
 
                 {/* Color Scheme */}
-                <div className="space-y-2">
-                  <Label>Color Scheme</Label>
-                  <div className="grid grid-cols-4 gap-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Color Scheme</Label>
+                  <div className="grid grid-cols-6 gap-1.5">
                     {COLOR_SCHEMES.map((scheme) => (
                       <button
                         key={scheme.value}
                         onClick={() => updateParam('colorScheme', scheme.value)}
+                        title={scheme.label}
                         className={cn(
-                          'p-2 rounded-lg border transition-all',
+                          'p-1.5 rounded border transition-all',
                           localParams.colorScheme === scheme.value
-                            ? 'border-violet-500 ring-2 ring-violet-500/20'
+                            ? 'border-violet-500 ring-1 ring-violet-500/20'
                             : 'border-zinc-700 hover:border-zinc-600'
                         )}
                       >
-                        <div className="flex gap-0.5 mb-1">
+                        <div className="flex gap-0.5 justify-center">
                           {scheme.colors.map((c, i) => (
                             <div
                               key={i}
-                              className="w-3 h-3 rounded-full"
+                              className="w-2.5 h-2.5 rounded-full"
                               style={{ backgroundColor: c }}
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-zinc-400">{scheme.label}</span>
                       </button>
                     ))}
                   </div>
@@ -1106,7 +1099,7 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
                 )}
               </TabsContent>
 
-              <TabsContent value="audio" className="space-y-4 mt-4">
+              <TabsContent value="audio" className="space-y-3 mt-0">
                 {/* Sensitivity */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -1147,7 +1140,7 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
                 </div>
               </TabsContent>
 
-              <TabsContent value="effects" className="space-y-4 mt-4">
+              <TabsContent value="effects" className="space-y-3 mt-0">
                 {/* Glow */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
