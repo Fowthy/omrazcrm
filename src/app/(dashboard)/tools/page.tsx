@@ -576,6 +576,176 @@ const DRUM_PRESETS: { name: string; pattern: Record<DrumType, boolean[]> }[] = [
       tom: Array(16).fill(false),
     },
   },
+  {
+    name: 'Trap',
+    pattern: {
+      kick: [true, false, false, false, false, false, false, true, false, false, true, false, false, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'House',
+    pattern: {
+      kick: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      snare: Array(16).fill(false),
+      hihat: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Techno',
+    pattern: {
+      kick: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      snare: Array(16).fill(false),
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true],
+    },
+  },
+  {
+    name: 'Shuffle',
+    pattern: {
+      kick: [true, false, false, false, false, false, true, false, true, false, false, false, false, false, true, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      hihat: [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Bossa Nova',
+    pattern: {
+      kick: [true, false, false, false, false, false, true, false, false, true, false, false, false, false, true, false],
+      snare: Array(16).fill(false),
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: [false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false],
+      tom: [false, false, false, false, false, true, false, false, false, false, false, false, false, true, false, false],
+    },
+  },
+  {
+    name: 'Metal',
+    pattern: {
+      kick: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Punk',
+    pattern: {
+      kick: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Ska',
+    pattern: {
+      kick: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      snare: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false],
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Dubstep',
+    pattern: {
+      kick: [true, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, true],
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Drill',
+    pattern: {
+      kick: [true, false, false, false, false, false, true, false, false, false, false, true, false, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, true, false, false, true, false, false],
+      hihat: [true, true, false, true, true, false, true, true, false, true, true, false, true, true, false, true],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Afrobeat',
+    pattern: {
+      kick: [true, false, false, false, true, false, false, true, false, false, true, false, false, false, true, false],
+      snare: [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: [false, false, false, true, false, false, false, false, false, false, false, true, false, false, false, false],
+    },
+  },
+  {
+    name: 'DnB',
+    pattern: {
+      kick: [true, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, false],
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Garage',
+    pattern: {
+      kick: [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, true, false, false, true, false],
+      hihat: [true, false, true, true, true, false, true, true, true, false, true, true, true, false, true, true],
+      clap: Array(16).fill(false),
+      tom: Array(16).fill(false),
+    },
+  },
+  {
+    name: 'Jazz',
+    pattern: {
+      kick: [true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false],
+      snare: Array(16).fill(false),
+      hihat: [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: [false, false, true, false, false, false, false, false, true, false, false, false, false, false, true, false],
+    },
+  },
+  {
+    name: 'Samba',
+    pattern: {
+      kick: [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true],
+      snare: [false, false, true, false, true, false, false, false, true, false, true, false, false, false, true, false],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: Array(16).fill(false),
+      tom: [false, false, false, false, false, true, false, true, false, false, false, false, false, true, false, true],
+    },
+  },
+  {
+    name: 'Motown',
+    pattern: {
+      kick: [true, false, false, false, true, false, false, true, true, false, false, false, true, false, false, false],
+      snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      clap: Array(16).fill(false),
+      tom: [false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false],
+    },
+  },
+  {
+    name: 'New Wave',
+    pattern: {
+      kick: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      snare: [false, false, false, false, true, false, false, true, false, false, false, false, true, false, false, true],
+      hihat: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      clap: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      tom: Array(16).fill(false),
+    },
+  },
 ];
 
 function DrumSequencer() {
@@ -1984,10 +2154,6 @@ export default function ToolsPage() {
             <Drum className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Polyrhythm</span>
           </TabsTrigger>
-          <TabsTrigger value="tempo" className="gap-1.5 text-xs sm:text-sm">
-            <Hand className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Tap</span>
-          </TabsTrigger>
           <TabsTrigger value="modulation" className="gap-1.5 text-xs sm:text-sm">
             <Calculator className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span className="hidden sm:inline">Modulation</span>
@@ -2026,9 +2192,6 @@ export default function ToolsPage() {
           <PolyrhythmTool />
         </TabsContent>
 
-        <TabsContent value="tempo">
-          <TapTempo />
-        </TabsContent>
 
         <TabsContent value="modulation">
           <MetricModulationCalculator />
