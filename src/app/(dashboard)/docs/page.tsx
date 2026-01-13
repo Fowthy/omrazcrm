@@ -41,8 +41,9 @@ export default function DocsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="getting-started" className="space-y-6">
+      <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
           <TabsTrigger value="projects">Projects & Songs</TabsTrigger>
           <TabsTrigger value="planning">Planning</TabsTrigger>
@@ -50,54 +51,270 @@ export default function DocsPage() {
           <TabsTrigger value="faq">FAQ</TabsTrigger>
         </TabsList>
 
+        {/* Overview */}
+        <TabsContent value="overview" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Book className="h-5 w-5 text-violet-400" />
+                What is Omraz Studio?
+              </CardTitle>
+              <CardDescription>
+                Your band&apos;s digital headquarters
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="prose prose-invert max-w-none">
+                <p className="text-zinc-300 text-lg">
+                  Omraz Studio is a comprehensive band management platform that brings together everything
+                  your band needs to organize creative work, plan events, and run the business side of music
+                  - all in one place.
+                </p>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-white mb-4">Why Use Omraz Studio?</h3>
+                <p className="text-zinc-400 mb-4">
+                  Running a band means juggling a lot: writing songs, booking shows, managing gear, tracking expenses,
+                  and keeping everyone on the same page. Omraz Studio eliminates the chaos of scattered spreadsheets,
+                  group chats, and forgotten notes by centralizing everything your band does.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-zinc-800 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FolderKanban className="h-5 w-5 text-violet-400" />
+                    <h4 className="font-semibold text-white">Organize Your Music</h4>
+                  </div>
+                  <p className="text-sm text-zinc-400">
+                    Track projects (albums, EPs, singles) from initial idea through release.
+                    Manage songs with BPM, key, lyrics, and audio files. Upload and version
+                    control all your recordings, stems, and artwork.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-zinc-800 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckSquare className="h-5 w-5 text-green-400" />
+                    <h4 className="font-semibold text-white">Stay on Track</h4>
+                  </div>
+                  <p className="text-sm text-zinc-400">
+                    Use the Kanban task board to manage everything that needs to get done.
+                    Assign tasks to band members, set priorities and deadlines, and link
+                    tasks directly to songs or projects.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-zinc-800 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-5 w-5 text-cyan-400" />
+                    <h4 className="font-semibold text-white">Plan Everything</h4>
+                  </div>
+                  <p className="text-sm text-zinc-400">
+                    Schedule rehearsals with goals and attendance tracking. Book shows with
+                    all the details (venue, times, payment). Build setlists for performances.
+                    See it all on one unified calendar.
+                  </p>
+                </div>
+                <div className="rounded-lg border border-zinc-800 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="h-5 w-5 text-yellow-400" />
+                    <h4 className="font-semibold text-white">Handle Business</h4>
+                  </div>
+                  <p className="text-sm text-zinc-400">
+                    Track band expenses with receipts and categories. Manage your gear
+                    inventory with maintenance logs. Keep industry contacts organized.
+                    Track merch inventory and sales.
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-white mb-4">Core Workflow</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Badge className="bg-violet-500/20 text-violet-400 mt-0.5">1</Badge>
+                    <div>
+                      <p className="text-white font-medium">Create a Project</p>
+                      <p className="text-sm text-zinc-400">Start with your album, EP, or single. This is the container for all related songs, files, and tasks.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Badge className="bg-violet-500/20 text-violet-400 mt-0.5">2</Badge>
+                    <div>
+                      <p className="text-white font-medium">Add Songs</p>
+                      <p className="text-sm text-zinc-400">Create songs within the project. Add metadata (BPM, key, lyrics) and upload audio files as you record.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Badge className="bg-violet-500/20 text-violet-400 mt-0.5">3</Badge>
+                    <div>
+                      <p className="text-white font-medium">Track Progress</p>
+                      <p className="text-sm text-zinc-400">Update project and song statuses as you move through writing, recording, mixing, and mastering.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Badge className="bg-violet-500/20 text-violet-400 mt-0.5">4</Badge>
+                    <div>
+                      <p className="text-white font-medium">Manage Tasks</p>
+                      <p className="text-sm text-zinc-400">Break down the work into tasks. Assign to band members, set due dates, and track completion on the Kanban board.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Badge className="bg-violet-500/20 text-violet-400 mt-0.5">5</Badge>
+                    <div>
+                      <p className="text-white font-medium">Plan & Perform</p>
+                      <p className="text-sm text-zinc-400">Schedule rehearsals, book shows, create setlists, and keep your calendar up to date.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-white mb-4">Platform Features at a Glance</h3>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <FolderKanban className="h-4 w-4 text-violet-400" />
+                    <span>Projects & Albums</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Music className="h-4 w-4 text-cyan-400" />
+                    <span>Songs & Audio Player</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <CheckSquare className="h-4 w-4 text-green-400" />
+                    <span>Kanban Task Board</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Calendar className="h-4 w-4 text-blue-400" />
+                    <span>Unified Calendar</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <ListMusic className="h-4 w-4 text-orange-400" />
+                    <span>Setlist Builder</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Mic className="h-4 w-4 text-pink-400" />
+                    <span>Rehearsal Scheduling</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <MapPin className="h-4 w-4 text-red-400" />
+                    <span>Show Management</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <DollarSign className="h-4 w-4 text-yellow-400" />
+                    <span>Expense Tracking</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Guitar className="h-4 w-4 text-amber-400" />
+                    <span>Gear Inventory</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Package className="h-4 w-4 text-purple-400" />
+                    <span>Merch Management</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Users className="h-4 w-4 text-teal-400" />
+                    <span>Contact Database</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Lightbulb className="h-4 w-4 text-yellow-400" />
+                    <span>Inspiration Board</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Share2 className="h-4 w-4 text-indigo-400" />
+                    <span>Secure Sharing</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Search className="h-4 w-4 text-zinc-400" />
+                    <span>Global Search (⌘K)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Settings className="h-4 w-4 text-zinc-400" />
+                    <span>Band Settings</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Getting Started */}
         <TabsContent value="getting-started" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Book className="h-5 w-5 text-violet-400" />
-                Welcome to Omraz Studio
+                Quick Start Guide
               </CardTitle>
               <CardDescription>
-                Your all-in-one band management platform
+                Get up and running in 5 minutes
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="prose prose-invert max-w-none">
                 <p className="text-zinc-300">
-                  Omraz Studio is designed to help bands and music creators organize their creative work,
-                  manage projects, track tasks, and collaborate effectively. Here&apos;s how to get started:
+                  Follow these steps to set up your workspace and start managing your band&apos;s work effectively.
                 </p>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-4">
                 <div className="rounded-lg border border-zinc-800 p-4">
-                  <h3 className="font-semibold text-white mb-2">1. Select a Project</h3>
-                  <p className="text-sm text-zinc-400">
-                    Use the project selector in the header to choose your active project.
-                    This helps filter content across the app to your current work.
+                  <h3 className="font-semibold text-white mb-2">Step 1: Create Your First Project</h3>
+                  <p className="text-sm text-zinc-400 mb-3">
+                    A project represents your album, EP, single, or demo. It&apos;s the main container for organizing your music.
                   </p>
+                  <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-1">
+                    <li>Go to <strong>Projects</strong> in the sidebar</li>
+                    <li>Click <strong>New Project</strong></li>
+                    <li>Enter the name, type (Album/EP/Single/Demo), and description</li>
+                    <li>Set the status to match your current stage</li>
+                  </ol>
                 </div>
+
                 <div className="rounded-lg border border-zinc-800 p-4">
-                  <h3 className="font-semibold text-white mb-2">2. Create Songs</h3>
-                  <p className="text-sm text-zinc-400">
-                    Add songs to your project with BPM, key, and status tracking.
-                    Upload audio files and manage different versions.
+                  <h3 className="font-semibold text-white mb-2">Step 2: Add Songs to Your Project</h3>
+                  <p className="text-sm text-zinc-400 mb-3">
+                    Songs live inside projects. Add all the tracks you&apos;re working on.
                   </p>
+                  <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-1">
+                    <li>Open your project and go to the <strong>Songs</strong> tab</li>
+                    <li>Click <strong>Add Song</strong></li>
+                    <li>Enter song details: title, BPM, key, time signature</li>
+                    <li>Upload an audio file if you have a demo or recording</li>
+                  </ol>
                 </div>
+
                 <div className="rounded-lg border border-zinc-800 p-4">
-                  <h3 className="font-semibold text-white mb-2">3. Manage Tasks</h3>
-                  <p className="text-sm text-zinc-400">
-                    Use the Kanban board to track tasks. Assign to band members,
-                    set priorities, and link tasks to specific songs.
+                  <h3 className="font-semibold text-white mb-2">Step 3: Set Up Your Task Board</h3>
+                  <p className="text-sm text-zinc-400 mb-3">
+                    Break down your work into trackable tasks that can be assigned and completed.
                   </p>
+                  <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-1">
+                    <li>Go to <strong>Tasks</strong> in the sidebar</li>
+                    <li>Click <strong>Add Task</strong></li>
+                    <li>Enter the task title, assign it, set priority and due date</li>
+                    <li>Link the task to a project or specific song</li>
+                    <li>Drag tasks between columns as work progresses</li>
+                  </ol>
                 </div>
+
                 <div className="rounded-lg border border-zinc-800 p-4">
-                  <h3 className="font-semibold text-white mb-2">4. Plan Events</h3>
-                  <p className="text-sm text-zinc-400">
-                    Schedule rehearsals, shows, and deadlines using the calendar.
-                    Create setlists for your performances.
+                  <h3 className="font-semibold text-white mb-2">Step 4: Schedule Your Events</h3>
+                  <p className="text-sm text-zinc-400 mb-3">
+                    Add rehearsals and shows to keep your band&apos;s schedule organized.
                   </p>
+                  <ol className="text-sm text-zinc-400 list-decimal list-inside space-y-1">
+                    <li>Go to <strong>Rehearsals</strong> or <strong>Shows</strong> in the sidebar</li>
+                    <li>Add new events with date, time, and location</li>
+                    <li>View everything on the <strong>Calendar</strong> page</li>
+                    <li>Create <strong>Setlists</strong> for your performances</li>
+                  </ol>
                 </div>
               </div>
 
@@ -115,6 +332,34 @@ export default function DocsPage() {
                     <kbd className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300">⌘B</kbd>
                   </div>
                 </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h3 className="font-semibold text-white mb-4">Pro Tips</h3>
+                <ul className="text-sm text-zinc-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-violet-400">•</span>
+                    Use the <strong>project selector</strong> in the header to filter content to your current project
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-violet-400">•</span>
+                    Press <kbd className="rounded bg-zinc-700 px-1.5 py-0.5 text-xs">⌘K</kbd> to quickly search and navigate anywhere
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-violet-400">•</span>
+                    Link tasks to specific songs to track what needs to be done for each track
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-violet-400">•</span>
+                    Use the <strong>Inspiration Board</strong> to save references before you forget them
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-violet-400">•</span>
+                    Log expenses as they happen - it&apos;s much easier than doing it all at tax time
+                  </li>
+                </ul>
               </div>
             </CardContent>
           </Card>
