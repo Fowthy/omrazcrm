@@ -27,6 +27,7 @@ import {
   Book,
   X,
   Image as ImageIcon,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,6 +52,7 @@ const workNavItems = [
   { href: '/rehearsals', label: 'Rehearsals', icon: CalendarDays },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/tools', label: 'Tools', icon: Wrench },
 ];
 
 const resourcesNavItems = [
