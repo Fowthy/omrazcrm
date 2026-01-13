@@ -44,32 +44,28 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen items-center justify-center p-4 relative"
+      className="min-h-screen relative flex items-center justify-center p-4"
       style={{
         backgroundImage: 'url("/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg")',
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
       }}
     >
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="fixed inset-0 bg-black/50 pointer-events-none" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto h-16 w-48">
+          <div className="mx-auto h-12 w-40">
             <img
               src="/White over trans.png"
               alt="Omraz"
-              className="w-full h-full object-contain"
+              className="h-full w-full object-contain"
             />
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold">
-              Welcome to Omraz Studio
-            </CardTitle>
-            <CardDescription className="mt-2">
-              Sign in to access your band management platform
-            </CardDescription>
-          </div>
+          <CardDescription className="mt-2">
+            Sign in to access your band management platform
+          </CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
