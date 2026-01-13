@@ -28,6 +28,7 @@ import {
   Plus,
   Search,
   Package,
+  Timer,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -38,6 +39,7 @@ const navigationItems = [
   { href: '/shows', label: 'Go to Shows', icon: Mic2 },
   { href: '/rehearsals', label: 'Go to Rehearsals', icon: CalendarDays },
   { href: '/tasks', label: 'Go to Tasks', icon: CheckSquare },
+  { href: '/tempo-maps', label: 'Go to Tempo Maps', icon: Timer },
   { href: '/finances', label: 'Go to Finances', icon: Wallet },
   { href: '/gear', label: 'Go to Gear', icon: Guitar },
   { href: '/merch', label: 'Go to Merch', icon: Package },

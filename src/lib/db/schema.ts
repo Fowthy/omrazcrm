@@ -504,3 +504,34 @@ export const merchSales = sqliteTable('merch_sales', {
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
+
+// ============================================
+// TEMPO MAPS
+// ============================================
+
+export const tempoMaps = sqliteTable('tempo_maps', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  defaultBpm: integer('default_bpm').default(120).notNull(),
+  defaultTimeSignature: text('default_time_signature').default('4/4').notNull(),
+  // Link to project or song (optional)
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+});
+
+export const tempoMapSections = sqliteTable('tempo_map_sections', {
+  id: text('id').primaryKey(),
+  tempoMapId: text('tempo_map_id').notNull().references(() => tempoMaps.id, { onDelete: 'cascade' }),
+  position: integer('position').notNull(), // Order in the tempo map
+  name: text('name'), // Optional section name (Intro, Verse, Chorus, etc.)
+  bars: integer('bars').notNull().default(4), // Number of bars in this section
+  bpm: integer('bpm').notNull(), // Tempo for this section
+  timeSignatureNumerator: integer('time_signature_numerator').notNull().default(4), // e.g., 4 in 4/4
+  timeSignatureDenominator: integer('time_signature_denominator').notNull().default(4), // e.g., 4 in 4/4
+  notes: text('notes'), // Any notes for this section
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
