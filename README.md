@@ -1,33 +1,55 @@
 # Omraz Studio
 
-A comprehensive band management platform for Omraz that centralizes all band-related work in one place.
+A comprehensive band management platform that centralizes all your band's creative work, planning, and business operations in one place. Built specifically for bands and music creators who need to stay organized while focusing on what matters most: making music.
+
+## What is Omraz Studio?
+
+Omraz Studio is your band's digital headquarters. It brings together everything a working band needs to manage their music career:
+
+- **Organize your music** - Track projects from initial ideas through final release
+- **Collaborate effectively** - Assign tasks, share files, and keep everyone on the same page
+- **Plan your schedule** - Manage rehearsals, shows, and deadlines in one calendar
+- **Handle business** - Track expenses, manage merch inventory, and maintain industry contacts
+- **Preserve inspiration** - Save ideas, references, and creative concepts before they're forgotten
+
+Whether you're working on a new album, preparing for a tour, or just trying to keep band practice organized, Omraz Studio provides the tools you need without the complexity.
+
+## Getting Started
+
+1. **Create an account** or sign in with the demo credentials
+2. **Select or create a project** - This is your album, EP, or single
+3. **Add songs** to your project with metadata like BPM, key, and lyrics
+4. **Upload audio files** and collaborate on mixes
+5. **Track progress** with the kanban task board
+6. **Schedule events** like rehearsals and shows in the calendar
+
+Use the **Command Palette** (press `Cmd/Ctrl + K`) to quickly navigate anywhere in the app.
 
 ## Features
 
 ### Core Features
-- **Projects** - Manage albums, EPs, singles, and demos with status tracking
-- **Songs** - Track songs with BPM, key, lyrics, and audio files
-- **File Management** - Upload and version control for audio, images, documents, and more
-- **Audio Player** - Waveform visualization with playback speed control and looping
+- **Projects** - Manage albums, EPs, singles, and demos with status tracking through the production workflow (Idea → Writing → Recording → Mixing → Mastering → Released)
+- **Songs** - Track songs with BPM, key, time signature, duration, lyrics, and audio files
+- **File Management** - Upload and version control for audio, images, documents, and project files
+- **Audio Player** - Waveform visualization with playback speed control and looping for practice
 
 ### Work Management
-- **Tasks** - Kanban board for task management with assignments and priorities
-- **Setlists** - Create and manage setlists with duration calculations
-- **Rehearsals** - Schedule rehearsals with attendance tracking and goals
-- **Calendar** - Unified calendar view for all events
+- **Tasks (Kanban Board)** - Visual task management with columns for To Do, In Progress, Review, and Done. Assign tasks to band members, set priorities, link to songs or projects
+- **Setlists** - Create and manage setlists with drag-and-drop ordering, automatic duration calculations, and transition notes
+- **Rehearsals** - Schedule band practice with location, goals, and attendance tracking
+- **Calendar** - Unified calendar view showing all shows, rehearsals, task deadlines, and release dates
 
 ### Resources
-- **Finances** - Track expenses, split costs, and generate reports
-- **Gear Inventory** - Catalog equipment with maintenance logs
-- **Contacts** - Manage industry contacts and interaction history
-- **Inspiration Board** - Save references, ideas, and creative inspiration
+- **Finances** - Log band expenses by category, upload receipts, track who paid, and view spending summaries
+- **Gear Inventory** - Catalog all your equipment with brand, model, serial numbers, and maintenance logs for string changes, repairs, etc.
+- **Contacts** - Manage industry contacts (venues, studios, engineers, promoters) with notes and interaction history
+- **Inspiration Board** - Save reference tracks, mood boards, images, and creative ideas with tags for easy filtering
 
 ### Additional Features
-- **Shows & Tours** - Manage live shows and tour logistics
-- **Merch** - Track merchandise inventory and sales
-- **Sharing** - Generate password-protected share links
-- **Notifications** - Stay updated on band activity
-- **Global Search** - Find anything across the platform
+- **Shows & Tours** - Track venue details, set times, soundcheck, ticket prices, and link setlists
+- **Merch** - Manage merchandise products with pricing, inventory levels, and sales tracking
+- **Sharing** - Generate password-protected, expiring links to share projects, songs, or files with collaborators
+- **Global Search** - Find anything across the platform instantly
 
 ## Tech Stack
 
