@@ -570,3 +570,23 @@ export const visualizations = sqliteTable('visualizations', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
 });
+
+// MIDI Projects - for saving MIDI Builder compositions
+export const midiProjects = sqliteTable('midi_projects', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  // Project settings
+  bpm: integer('bpm').notNull().default(120),
+  totalBeats: integer('total_beats').notNull().default(16),
+  // Tracks and notes stored as JSON
+  // JSON structure: [{ id, name, instrument, notes: [{id, pitch, start, duration, velocity}], muted, solo, volume, pan }]
+  tracks: text('tracks').notNull(),
+  // Links to existing content
+  songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  // Metadata
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+});

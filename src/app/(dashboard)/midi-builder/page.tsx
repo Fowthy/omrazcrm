@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   Play,
@@ -41,7 +59,28 @@ import {
   ZoomIn,
   ZoomOut,
   Grid,
+  FolderOpen,
+  FilePlus,
+  Check,
+  Loader2,
+  MoreVertical,
+  Clock,
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+// Types for saved projects
+interface MidiProject {
+  id: string;
+  name: string;
+  description: string | null;
+  bpm: number;
+  totalBeats: number;
+  tracks: Track[];
+  songId: string | null;
+  projectId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // Audio setup
 let audioContext: AudioContext | null = null;
@@ -201,7 +240,17 @@ function generateId(): string {
 }
 
 export default function MidiBuilderPage() {
-  // State
+  const queryClient = useQueryClient();
+
+  // Project management state
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState('Untitled Project');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+
+  // Editor state
   const [tracks, setTracks] = useState<Track[]>([
     {
       id: generateId(),
@@ -227,6 +276,106 @@ export default function MidiBuilderPage() {
   const [loopEnabled, setLoopEnabled] = useState(false);
   const [loopStart, setLoopStart] = useState(0);
   const [loopEnd, setLoopEnd] = useState(4);
+
+  // API queries and mutations
+  const { data: savedProjects = [], isLoading: isLoadingProjects } = useQuery<MidiProject[]>({
+    queryKey: ['midi-projects'],
+    queryFn: async () => {
+      const res = await fetch('/api/midi-projects');
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      return res.json();
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: { name: string; isNew: boolean }) => {
+      const payload = {
+        name: data.name,
+        bpm,
+        totalBeats,
+        tracks,
+      };
+
+      if (data.isNew || !currentProjectId) {
+        const res = await fetch('/api/midi-projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to save project');
+        return res.json();
+      } else {
+        const res = await fetch(`/api/midi-projects/${currentProjectId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to update project');
+        return res.json();
+      }
+    },
+    onSuccess: (data) => {
+      setCurrentProjectId(data.id);
+      setProjectName(data.name);
+      setHasUnsavedChanges(false);
+      setSaveDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['midi-projects'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/midi-projects/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete project');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['midi-projects'] });
+    },
+  });
+
+  // Load a project
+  const loadProject = useCallback((project: MidiProject) => {
+    setCurrentProjectId(project.id);
+    setProjectName(project.name);
+    setBpm(project.bpm);
+    setTotalBeats(project.totalBeats);
+    setTracks(project.tracks);
+    setSelectedTrack(0);
+    setCurrentBeat(0);
+    setSelectedNotes(new Set());
+    setHasUnsavedChanges(false);
+    setLoadDialogOpen(false);
+  }, []);
+
+  // Create new project
+  const newProject = useCallback(() => {
+    setCurrentProjectId(null);
+    setProjectName('Untitled Project');
+    setBpm(120);
+    setTotalBeats(16);
+    setTracks([{
+      id: generateId(),
+      name: 'Track 1',
+      instrument: 'piano',
+      notes: [],
+      muted: false,
+      solo: false,
+      volume: 80,
+      pan: 0,
+    }]);
+    setSelectedTrack(0);
+    setCurrentBeat(0);
+    setSelectedNotes(new Set());
+    setHasUnsavedChanges(false);
+  }, []);
+
+  // Mark as having unsaved changes when tracks/bpm/totalBeats change
+  useEffect(() => {
+    if (currentProjectId) {
+      setHasUnsavedChanges(true);
+    }
+  }, [tracks, bpm, totalBeats]);
 
   // Refs
   const pianoRollRef = useRef<HTMLDivElement>(null);
@@ -440,10 +589,58 @@ export default function MidiBuilderPage() {
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900/50">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            <FileMusic className="h-5 w-5" />
-            MIDI Builder
-          </h1>
+          {/* File menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-2">
+                <FileMusic className="h-4 w-4" />
+                File
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={newProject}>
+                <FilePlus className="h-4 w-4 mr-2" />
+                New Project
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLoadDialogOpen(true)}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Open Project...
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => {
+                  if (currentProjectId) {
+                    saveMutation.mutate({ name: projectName, isNew: false });
+                  } else {
+                    setNewProjectName(projectName);
+                    setSaveDialogOpen(true);
+                  }
+                }}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                setNewProjectName(projectName === 'Untitled Project' ? '' : projectName);
+                setSaveDialogOpen(true);
+              }}>
+                <Save className="h-4 w-4 mr-2" />
+                Save As...
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Project name */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium truncate max-w-[200px]">{projectName}</span>
+            {hasUnsavedChanges && (
+              <Badge variant="outline" className="text-[10px] text-yellow-500 border-yellow-500/50">
+                Unsaved
+              </Badge>
+            )}
+          </div>
+
+          <div className="h-4 w-px bg-zinc-700" />
 
           {/* Transport controls */}
           <div className="flex items-center gap-1">
@@ -801,6 +998,141 @@ export default function MidiBuilderPage() {
           </div>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Project</DialogTitle>
+            <DialogDescription>
+              Give your MIDI project a name to save it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                value={newProjectName}
+                onChange={e => setNewProjectName(e.target.value)}
+                placeholder="Enter project name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (newProjectName.trim()) {
+                  saveMutation.mutate({ name: newProjectName.trim(), isNew: true });
+                }
+              }}
+              disabled={!newProjectName.trim() || saveMutation.isPending}
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Load Dialog */}
+      <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Open Project</DialogTitle>
+            <DialogDescription>
+              Select a saved MIDI project to open.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {isLoadingProjects ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+              </div>
+            ) : savedProjects.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500">
+                <FileMusic className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No saved projects yet.</p>
+                <p className="text-sm">Create and save a project to see it here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {savedProjects.map(project => (
+                  <div
+                    key={project.id}
+                    className={cn(
+                      'p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 cursor-pointer transition-colors',
+                      currentProjectId === project.id && 'border-primary bg-primary/5'
+                    )}
+                    onClick={() => loadProject(project)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium flex items-center gap-2">
+                          {project.name}
+                          {currentProjectId === project.id && (
+                            <Badge variant="secondary" className="text-[10px]">Current</Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-1 flex items-center gap-3">
+                          <span>{project.bpm} BPM</span>
+                          <span>{project.totalBeats / 4} bars</span>
+                          <span>{project.tracks.length} tracks</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            className="text-red-500"
+                            onClick={e => {
+                              e.stopPropagation();
+                              if (confirm('Delete this project? This cannot be undone.')) {
+                                deleteMutation.mutate(project.id);
+                                if (currentProjectId === project.id) {
+                                  newProject();
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLoadDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
