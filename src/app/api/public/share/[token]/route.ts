@@ -21,6 +21,9 @@ import {
 import { eq, asc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 // No auth required for this route - it's public!
 
 interface ShareValidation {

@@ -16,6 +16,9 @@ import {
 import { desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 // Share types supported
 export const SHARE_TYPES = [
   'project',

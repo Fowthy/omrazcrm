@@ -5,6 +5,9 @@ import { eq } from 'drizzle-orm';
 import { unlink } from 'fs/promises';
 import path from 'path';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { shows, rehearsals, tasks, projects } from '@/lib/db/schema';
 import { gte, lte, and, isNotNull } from 'drizzle-orm';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   try {

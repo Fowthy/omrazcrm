@@ -282,21 +282,23 @@ export default function TempoMapsPage() {
               <div className="space-y-2">
                 <Label>Link to Project (optional)</Label>
                 <Select
-                  value={newTempoMap.projectId}
+                  value={newTempoMap.projectId || 'none'}
                   onValueChange={(value) =>
-                    setNewTempoMap({ ...newTempoMap, projectId: value })
+                    setNewTempoMap({ ...newTempoMap, projectId: value === 'none' ? '' : value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {projects?.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">None</SelectItem>
+                    {(projects ?? []).map((project) =>
+                      project.id && project.id.length > 0 ? (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ) : null
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -304,19 +306,21 @@ export default function TempoMapsPage() {
               <div className="space-y-2">
                 <Label>Link to Song (optional)</Label>
                 <Select
-                  value={newTempoMap.songId}
-                  onValueChange={handleSongSelect}
+                  value={newTempoMap.songId || 'none'}
+                  onValueChange={(value) => handleSongSelect(value === 'none' ? '' : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a song" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {songs?.map((song) => (
-                      <SelectItem key={song.id} value={song.id}>
-                        {song.title} {song.bpm && `(${song.bpm} BPM)`}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="none">None</SelectItem>
+                    {(songs ?? []).map((song) =>
+                      song.id && song.id.length > 0 ? (
+                        <SelectItem key={song.id} value={song.id}>
+                          {song.title} {song.bpm && `(${song.bpm} BPM)`}
+                        </SelectItem>
+                      ) : null
+                    )}
                   </SelectContent>
                 </Select>
               </div>

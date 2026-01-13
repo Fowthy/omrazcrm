@@ -486,7 +486,7 @@ export default function SetlistDetailPage({ params }: { params: Promise<{ id: st
                   <SelectValue placeholder="Select a song" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSongs?.map((song) => (
+                  {availableSongs?.filter((s) => s.id).map((song) => (
                     <SelectItem key={song.id} value={song.id}>
                       {song.title}
                       {song.duration && ` (${formatDuration(song.duration)})`}

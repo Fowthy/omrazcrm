@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { merchItems, merchSales } from '@/lib/db/schema';
 import { desc, eq, sum } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   try {

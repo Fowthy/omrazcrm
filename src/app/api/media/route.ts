@@ -6,6 +6,9 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
+
 // Helper to extract YouTube video ID from various URL formats
 function extractYouTubeVideoId(url: string): string | null {
   const patterns = [

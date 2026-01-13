@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { nanoid } from 'nanoid';
+// Use Node.js runtime for file:// database URLs (local SQLite)
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
