@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import {
-// Use Node.js runtime for file:// database URLs (local SQLite)
-export const runtime = 'nodejs';
   shareLinks,
   projects,
   songs,
@@ -22,6 +20,7 @@ export const runtime = 'nodejs';
 } from '@/lib/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
 

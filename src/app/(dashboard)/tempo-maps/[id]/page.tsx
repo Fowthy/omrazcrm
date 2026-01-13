@@ -904,14 +904,14 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
             <div className="space-y-2">
               <Label>Link to Project</Label>
               <Select
-                value={editData.projectId}
-                onValueChange={(value) => setEditData({ ...editData, projectId: value })}
+                value={editData.projectId || 'none'}
+                onValueChange={(value) => setEditData({ ...editData, projectId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {projects?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -924,14 +924,14 @@ export default function TempoMapDetailPage({ params }: { params: Promise<{ id: s
             <div className="space-y-2">
               <Label>Link to Song</Label>
               <Select
-                value={editData.songId}
-                onValueChange={(value) => setEditData({ ...editData, songId: value })}
+                value={editData.songId || 'none'}
+                onValueChange={(value) => setEditData({ ...editData, songId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a song" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {songs?.map((song) => (
                     <SelectItem key={song.id} value={song.id}>
                       {song.title}
