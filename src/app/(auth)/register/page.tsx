@@ -73,26 +73,22 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative bg-black">
+    <div className="flex min-h-screen items-center justify-center p-4 relative">
       {/* Background Image */}
-      <Image
+      <img
         src="/background.jpg"
         alt=""
-        fill
-        className="object-cover opacity-70 z-0"
-        priority
+        className="absolute inset-0 w-full h-full object-cover opacity-50"
       />
-      <div className="absolute inset-0 bg-black/30 z-0" />
+      <div className="absolute inset-0 bg-black/40" />
 
       <Card className="relative z-10 w-full max-w-md border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto relative h-20 w-20 overflow-hidden rounded-2xl">
-            <Image
+          <div className="mx-auto h-16 w-48">
+            <img
               src="/logo.png"
               alt="Omraz"
-              fill
-              className="object-cover"
-              priority
+              className="w-full h-full object-contain"
             />
           </div>
           <div>

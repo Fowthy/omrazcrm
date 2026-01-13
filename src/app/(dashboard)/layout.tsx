@@ -30,16 +30,12 @@ export default function DashboardLayout({
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="fixed inset-0 z-0">
-          <Image
-            src="/background.png"
-            alt=""
-            fill
-            className="object-cover opacity-20"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/90 to-zinc-950" />
-        </div>
+        <img
+          src="/background.jpg"
+          alt=""
+          className="fixed inset-0 w-full h-full object-cover opacity-20"
+        />
+        <div className="fixed inset-0 bg-black/60" />
         <Loader2 className="h-8 w-8 animate-spin text-violet-500 relative z-10" />
       </div>
     );
@@ -50,19 +46,14 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 relative">
+    <div className="min-h-screen relative">
       {/* Background Image with Transparency */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <Image
-          src="/background.png"
-          alt=""
-          fill
-          className="object-cover opacity-[0.08]"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950/70 via-zinc-950/85 to-zinc-950/95" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/50" />
-      </div>
+      <img
+        src="/background.jpg"
+        alt=""
+        className="fixed inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
+      />
+      <div className="fixed inset-0 bg-black/70 pointer-events-none" />
 
       <Sidebar />
       <Header />
