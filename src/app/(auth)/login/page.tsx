@@ -48,7 +48,7 @@ export default function LoginPage() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/background.png"
+          src="/10A44171-E977-4C91-B2B5-62205CEAC7C2 (2) (1).jpg"
           alt=""
           fill
           className="object-cover opacity-30"
@@ -67,7 +67,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto relative h-20 w-20 overflow-hidden rounded-2xl">
             <Image
-              src="/logo.png"
+              src="/White over trans.png"
               alt="Omraz"
               fill
               className="object-cover"
