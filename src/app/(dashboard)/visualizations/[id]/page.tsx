@@ -117,6 +117,10 @@ const COLOR_SCHEMES = [
   { value: 'monochrome', label: 'Mono', colors: ['#ffffff', '#888888', '#ffffff'] },
   { value: 'rainbow', label: 'Rainbow', colors: ['#ff0000', '#00ff00', '#0000ff'] },
   { value: 'synthwave', label: 'Synthwave', colors: ['#ff00ff', '#00ffff', '#ff1493'] },
+  { value: 'cyberpunk', label: 'Cyberpunk', colors: ['#f0f000', '#ff00ff', '#00ffff'] },
+  { value: 'aurora', label: 'Aurora', colors: ['#00ff88', '#00ffcc', '#8800ff'] },
+  { value: 'lava', label: 'Lava', colors: ['#ff0000', '#ff4400', '#ffcc00'] },
+  { value: 'ice', label: 'Ice', colors: ['#88eeff', '#ffffff', '#aaddff'] },
 ];
 
 const VISUAL_TYPES = [
@@ -126,6 +130,8 @@ const VISUAL_TYPES = [
   { value: 'particles', label: 'Particles' },
   { value: 'kaleidoscope', label: 'Kaleidoscope' },
   { value: 'geometric', label: 'Geometric' },
+  { value: 'spiral', label: 'Spiral' },
+  { value: 'matrix', label: 'Matrix Rain' },
 ];
 
 export default function VisualizationDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -273,6 +279,12 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
         break;
       case 'geometric':
         drawGeometric(ctx, dataArray, width, height, colors);
+        break;
+      case 'spiral':
+        drawSpiral(ctx, dataArray, width, height, colors);
+        break;
+      case 'matrix':
+        drawMatrix(ctx, dataArray, width, height, colors);
         break;
     }
 
@@ -583,6 +595,115 @@ export default function VisualizationDetailPage({ params }: { params: Promise<{ 
     }
 
     ctx.restore();
+  };
+
+  // Spiral visualization ref
+  const spiralAngleRef = useRef(0);
+
+  const drawSpiral = (
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array,
+    width: number,
+    height: number,
+    colors: string[]
+  ) => {
+    if (!localParams) return;
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    spiralAngleRef.current += localParams.rotationSpeed * 0.02;
+
+    const avgValue = data.reduce((a, b) => a + b, 0) / data.length;
+    const intensity = (avgValue / 255) * localParams.sensitivity;
+
+    ctx.lineWidth = 2;
+
+    for (let arm = 0; arm < 6; arm++) {
+      const armOffset = (Math.PI * 2 * arm) / 6;
+      ctx.strokeStyle = colors[arm % colors.length];
+      ctx.beginPath();
+
+      for (let i = 0; i < 100; i++) {
+        const dataIndex = Math.floor((i / 100) * data.length);
+        const value = data[dataIndex] * localParams.sensitivity;
+        const angle = spiralAngleRef.current + armOffset + i * 0.15;
+        const radius = i * 3 + (value / 255) * 30;
+        const x = centerX + Math.cos(angle) * radius;
+        const y = centerY + Math.sin(angle) * radius;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+    }
+
+    // Center pulse
+    ctx.fillStyle = colors[0];
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 20 + intensity * 30, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  // Matrix rain refs
+  const matrixDropsRef = useRef<number[]>([]);
+
+  const drawMatrix = (
+    ctx: CanvasRenderingContext2D,
+    data: Uint8Array,
+    width: number,
+    height: number,
+    colors: string[]
+  ) => {
+    if (!localParams) return;
+
+    const fontSize = 14;
+    const columns = Math.floor(width / fontSize);
+
+    // Initialize drops
+    if (matrixDropsRef.current.length !== columns) {
+      matrixDropsRef.current = Array(columns).fill(0).map(() => Math.random() * -100);
+    }
+
+    // Semi-transparent background for trail effect
+    ctx.fillStyle = localParams.backgroundColor + '15';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.font = `${fontSize}px monospace`;
+
+    const avgValue = data.reduce((a, b) => a + b, 0) / data.length;
+    const speed = 1 + (avgValue / 255) * localParams.sensitivity * 2;
+
+    const chars = 'OMRAZ01アイウエオカキクケコサシスセソ';
+
+    for (let i = 0; i < columns; i++) {
+      const dataIndex = Math.floor((i / columns) * data.length);
+      const value = data[dataIndex];
+      const brightness = 0.3 + (value / 255) * 0.7;
+
+      // Color based on audio intensity
+      const colorIndex = Math.floor((value / 255) * colors.length);
+      ctx.fillStyle = colors[colorIndex % colors.length];
+      ctx.globalAlpha = brightness;
+
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * fontSize;
+      const y = matrixDropsRef.current[i] * fontSize;
+
+      ctx.fillText(char, x, y);
+
+      // Reset drop when it goes off screen
+      if (y > height && Math.random() > 0.975) {
+        matrixDropsRef.current[i] = 0;
+      }
+
+      matrixDropsRef.current[i] += speed * 0.5;
+    }
+
+    ctx.globalAlpha = 1;
   };
 
   // Start animation loop

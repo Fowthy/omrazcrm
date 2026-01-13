@@ -76,6 +76,8 @@ const VISUAL_TYPES = [
   { value: 'particles', label: 'Particles', icon: Atom, color: 'text-pink-400' },
   { value: 'kaleidoscope', label: 'Kaleidoscope', icon: Hexagon, color: 'text-orange-400' },
   { value: 'geometric', label: 'Geometric', icon: Sparkles, color: 'text-yellow-400' },
+  { value: 'spiral', label: 'Spiral', icon: Circle, color: 'text-emerald-400' },
+  { value: 'matrix', label: 'Matrix Rain', icon: BarChart3, color: 'text-lime-400' },
 ];
 
 export default function VisualizationsPage() {
@@ -225,7 +227,7 @@ export default function VisualizationsPage() {
 
               <div className="space-y-2">
                 <Label>Visualization Type</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {VISUAL_TYPES.map((type) => {
                     const Icon = type.icon;
                     return (

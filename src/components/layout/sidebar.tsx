@@ -143,6 +143,7 @@ export function Sidebar() {
             <img
               src="/White over trans.png"
               alt="Omraz"
+              data-logo-easter-egg
               className={cn('object-contain', isCollapsed ? 'lg:h-10 lg:w-10 h-10 w-32' : 'h-10 w-32')}
             />
           </Link>
