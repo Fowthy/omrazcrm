@@ -837,35 +837,50 @@ function MetricModulationCalculator() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="h-5 w-5 text-green-400" />
-          Metric Modulation Calculator
-        </CardTitle>
-        <CardDescription>Calculate tempo changes between note values</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Main tempo input */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-          <div className="flex-1">
-            <Label className="text-zinc-400 mb-2 block">Starting Tempo</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                value={sourceBpm}
-                onChange={(e) => setSourceBpm(Math.max(1, parseInt(e.target.value) || 120))}
-                className="text-2xl h-14 text-center font-bold w-32"
-              />
-              <span className="text-zinc-400 text-lg">BPM</span>
-            </div>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calculator className="h-4 w-4 text-green-400" />
+            Metric Modulation
+          </CardTitle>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              onClick={() => setViewMode('table')}
+              className="h-7 text-xs px-2"
+            >
+              Grid
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'calculator' ? 'default' : 'ghost'}
+              onClick={() => setViewMode('calculator')}
+              className="h-7 text-xs px-2"
+            >
+              Calc
+            </Button>
           </div>
-          <div className="flex gap-2">
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 pt-0">
+        {/* Compact tempo input */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input
+            type="number"
+            value={sourceBpm}
+            onChange={(e) => setSourceBpm(Math.max(1, parseInt(e.target.value) || 120))}
+            className="text-xl h-10 text-center font-bold w-20"
+          />
+          <span className="text-zinc-400 text-sm">BPM</span>
+          <div className="flex gap-1 ml-auto">
             {[60, 90, 120, 140, 180].map((tempo) => (
               <Button
                 key={tempo}
                 size="sm"
                 variant={sourceBpm === tempo ? 'default' : 'outline'}
                 onClick={() => setSourceBpm(tempo)}
+                className="h-7 px-2 text-xs"
               >
                 {tempo}
               </Button>
@@ -873,110 +888,63 @@ function MetricModulationCalculator() {
           </div>
         </div>
 
-        {/* View toggle */}
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant={viewMode === 'table' ? 'default' : 'outline'}
-            onClick={() => setViewMode('table')}
-          >
-            All Modulations
-          </Button>
-          <Button
-            size="sm"
-            variant={viewMode === 'calculator' ? 'default' : 'outline'}
-            onClick={() => setViewMode('calculator')}
-          >
-            Calculator
-          </Button>
-        </div>
-
         {viewMode === 'table' ? (
-          /* All modulations table view */
-          <div className="space-y-4">
-            <div className="bg-zinc-800/50 rounded-lg overflow-hidden">
-              <div className="grid grid-cols-[1fr,auto,auto] sm:grid-cols-[1fr,auto,auto,auto] gap-2 p-3 bg-zinc-700/50 text-sm font-medium text-zinc-300">
-                <div>Modulation</div>
-                <div className="text-center hidden sm:block">Relationship</div>
-                <div className="text-center">Ratio</div>
-                <div className="text-right">New Tempo</div>
-              </div>
-              <div className="divide-y divide-zinc-700/50">
-                {allModulations.map((mod, i) => {
-                  const ratio = mod.fromValue / mod.toValue;
-                  const ratioDisplay = ratio >= 1
-                    ? `${ratio.toFixed(2)}x`
-                    : `÷${(1/ratio).toFixed(2)}`;
-                  const isIncrease = mod.newTempo > sourceBpm;
-
-                  return (
-                    <div
-                      key={i}
-                      className="grid grid-cols-[1fr,auto,auto] sm:grid-cols-[1fr,auto,auto,auto] gap-2 p-3 items-center hover:bg-zinc-800/30"
-                    >
-                      <div className="text-sm">
-                        <span className="text-white font-medium">{mod.from}</span>
-                        <span className="text-zinc-500 mx-2">=</span>
-                        <span className="text-white font-medium">{mod.to}</span>
-                        <span className="text-zinc-500 text-xs ml-2 hidden sm:inline">
-                          ({mod.desc})
-                        </span>
-                      </div>
-                      <div className="text-center text-zinc-400 text-xs hidden sm:block">
-                        {mod.desc.split('(')[0]}
-                      </div>
-                      <div className={cn(
-                        "text-center text-sm font-mono",
-                        isIncrease ? "text-red-400" : "text-cyan-400"
-                      )}>
-                        {ratioDisplay}
-                      </div>
-                      <div className={cn(
-                        "text-right font-bold text-lg",
-                        isIncrease ? "text-red-400" : "text-cyan-400"
-                      )}>
-                        {mod.newTempo}
-                      </div>
+          /* Compact grid view - all modulations visible */
+          <div className="space-y-2">
+            {/* Main modulations grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5">
+              {allModulations.map((mod, i) => {
+                const isIncrease = mod.newTempo > sourceBpm;
+                return (
+                  <div
+                    key={i}
+                    className="bg-zinc-800/50 rounded px-2 py-1.5 hover:bg-zinc-700/50 transition-colors"
+                  >
+                    <div className="text-xs text-zinc-400">
+                      {mod.from}<span className="mx-1">=</span>{mod.to}
                     </div>
-                  );
-                })}
-              </div>
+                    <div className={cn(
+                      "text-lg font-bold",
+                      isIncrease ? "text-red-400" : "text-cyan-400"
+                    )}>
+                      {mod.newTempo}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Quick reference */}
-            <div className="bg-zinc-800/30 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-zinc-300 mb-2">Quick Reference</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                <div className="bg-zinc-800/50 rounded p-2">
-                  <div className="text-zinc-500 text-xs">Half tempo</div>
-                  <div className="text-white font-bold">{Math.round(sourceBpm / 2)} BPM</div>
-                </div>
-                <div className="bg-zinc-800/50 rounded p-2">
-                  <div className="text-zinc-500 text-xs">Double tempo</div>
-                  <div className="text-white font-bold">{sourceBpm * 2} BPM</div>
-                </div>
-                <div className="bg-zinc-800/50 rounded p-2">
-                  <div className="text-zinc-500 text-xs">Triplet feel (×1.5)</div>
-                  <div className="text-white font-bold">{Math.round(sourceBpm * 1.5)} BPM</div>
-                </div>
-                <div className="bg-zinc-800/50 rounded p-2">
-                  <div className="text-zinc-500 text-xs">Dotted feel (×0.67)</div>
-                  <div className="text-white font-bold">{Math.round(sourceBpm * 2/3)} BPM</div>
-                </div>
+            {/* Quick reference - inline */}
+            <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-zinc-800">
+              <div className="text-center">
+                <div className="text-[10px] text-zinc-500">½</div>
+                <div className="text-sm font-bold text-white">{Math.round(sourceBpm / 2)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-zinc-500">2×</div>
+                <div className="text-sm font-bold text-white">{sourceBpm * 2}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-zinc-500">×1.5</div>
+                <div className="text-sm font-bold text-white">{Math.round(sourceBpm * 1.5)}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-zinc-500">×⅔</div>
+                <div className="text-sm font-bold text-white">{Math.round(sourceBpm * 2/3)}</div>
               </div>
             </div>
           </div>
         ) : (
-          /* Calculator view (original functionality) */
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+          /* Calculator view - compact */
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-zinc-400 mb-2 block">Source Note Value</Label>
+                <Label className="text-zinc-400 mb-1 block text-xs">Source</Label>
                 <Select
                   value={sourceNote.toString()}
                   onValueChange={(v) => setSourceNote(parseFloat(v))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -989,12 +957,12 @@ function MetricModulationCalculator() {
                 </Select>
               </div>
               <div>
-                <Label className="text-zinc-400 mb-2 block">Target Note Value</Label>
+                <Label className="text-zinc-400 mb-1 block text-xs">Target</Label>
                 <Select
                   value={targetNote.toString()}
                   onValueChange={(v) => setTargetNote(parseFloat(v))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1008,25 +976,17 @@ function MetricModulationCalculator() {
               </div>
             </div>
 
-            <div className="bg-zinc-800/50 rounded-lg p-6 text-center">
-              <div className="text-zinc-400 text-sm mb-2">
-                {NOTE_VALUES.find((n) => n.value === sourceNote)?.symbol} at {sourceBpm} BPM
+            <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-zinc-400 text-sm">
+                  {NOTE_VALUES.find((n) => n.value === sourceNote)?.symbol} @ {sourceBpm}
+                </span>
+                <span className="text-zinc-500">=</span>
+                <span className="text-zinc-400 text-sm">
+                  {NOTE_VALUES.find((n) => n.value === targetNote)?.symbol} @
+                </span>
+                <span className="text-3xl font-bold text-violet-400">{targetBpm}</span>
               </div>
-              <div className="text-2xl text-zinc-500 my-2">=</div>
-              <div className="text-zinc-400 text-sm mb-2">
-                {NOTE_VALUES.find((n) => n.value === targetNote)?.symbol} at
-              </div>
-              <div className="text-5xl font-bold text-violet-400">{targetBpm}</div>
-              <div className="text-zinc-400 mt-1">BPM</div>
-            </div>
-
-            <div className="bg-zinc-800/50 rounded-lg p-4">
-              <p className="text-sm text-zinc-300">
-                At <strong>{sourceBpm} BPM</strong>, one{' '}
-                <strong>{NOTE_VALUES.find((n) => n.value === sourceNote)?.label}</strong> note equals one{' '}
-                <strong>{NOTE_VALUES.find((n) => n.value === targetNote)?.label}</strong> note at{' '}
-                <strong className="text-violet-400">{targetBpm} BPM</strong>.
-              </p>
             </div>
           </div>
         )}
