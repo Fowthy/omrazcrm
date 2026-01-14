@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db, users } from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import { nanoid } from 'nanoid';
+import { put } from '@vercel/blob';
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
 
@@ -35,22 +34,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File too large. Maximum size is 2MB.' }, { status: 400 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'avatars');
-    await mkdir(uploadDir, { recursive: true });
-
     // Generate unique filename
-    const ext = file.name.split('.').pop();
-    const filename = `${session.user.id}-${nanoid()}.${ext}`;
-    const filepath = path.join(uploadDir, filename);
+    const ext = file.name.split('.').pop() || '';
+    const blobPath = `avatars/${session.user.id}-${nanoid()}${ext ? `.${ext}` : ''}`;
 
-    // Write file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
-    // Update user avatar in database
-    const avatarUrl = `/uploads/avatars/${filename}`;
+    // Update user avatar in database with blob URL
+    const avatarUrl = blob.url;
 
     const updatedUser = await db
       .update(users)

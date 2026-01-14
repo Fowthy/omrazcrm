@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db, media } from '@/lib/db';
 import { desc, eq, like, or } from 'drizzle-orm';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { randomUUID } from 'crypto';
+import { nanoid } from 'nanoid';
+import { put } from '@vercel/blob';
 
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
@@ -138,22 +137,18 @@ export async function POST(request: Request) {
       // Determine media type
       const mediaType = file.type.startsWith('image/') ? 'photo' : 'video';
 
-      // Create upload directory
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'media');
-      await mkdir(uploadDir, { recursive: true });
-
       // Generate unique filename
-      const ext = path.extname(file.name);
-      const fileName = `${randomUUID()}${ext}`;
-      const filePath = path.join(uploadDir, fileName);
+      const id = nanoid();
+      const ext = file.name.split('.').pop() || '';
+      const blobPath = `media/${id}${ext ? `.${ext}` : ''}`;
 
-      // Write file
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
+      // Upload to Vercel Blob
+      const blob = await put(blobPath, file, {
+        access: 'public',
+        addRandomSuffix: false,
+      });
 
-      // Create media record
-      const id = randomUUID();
+      // Create media record with blob URL
       const result = await db
         .insert(media)
         .values({
@@ -162,7 +157,7 @@ export async function POST(request: Request) {
           description,
           type: mediaType,
           category,
-          filePath: `/uploads/media/${fileName}`,
+          filePath: blob.url,
           mimeType: file.type,
           fileSize: file.size,
           tags,
@@ -189,7 +184,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: 'Invalid YouTube URL' }, { status: 400 });
         }
 
-        const id = randomUUID();
+        const id = nanoid();
         const result = await db
           .insert(media)
           .values({

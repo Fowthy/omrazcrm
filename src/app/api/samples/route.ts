@@ -3,8 +3,7 @@ import { auth } from '@/lib/auth';
 import { db, samples, users } from '@/lib/db';
 import { eq, desc, like, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
 
 export const runtime = 'nodejs';
 
@@ -95,30 +94,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File must be an audio file' }, { status: 400 });
     }
 
-    // Create samples directory
-    const samplesDir = path.join(process.cwd(), 'uploads', 'samples');
-    await mkdir(samplesDir, { recursive: true });
-
     // Generate unique filename
-    const ext = path.extname(file.name);
     const sampleId = nanoid();
-    const fileName = `${sampleId}${ext}`;
-    const filePath = path.join(samplesDir, fileName);
+    const ext = file.name.split('.').pop() || '';
+    const blobPath = `samples/${sampleId}${ext ? `.${ext}` : ''}`;
 
-    // Write file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
-    // Create sample record
+    // Create sample record with blob URL
     const newSample = await db
       .insert(samples)
       .values({
         id: sampleId,
-        name: name || file.name.replace(ext, ''),
+        name: name || file.name.replace(`.${ext}`, ''),
         category: SAMPLE_CATEGORIES.includes(category) ? category : 'other',
         tags: tags || null,
-        filePath: `/uploads/samples/${fileName}`,
+        filePath: blob.url,
         mimeType: mimeType,
         fileSize: file.size,
         bpm: bpm ? parseInt(bpm) : null,
