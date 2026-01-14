@@ -31,6 +31,7 @@ import {
   Timer,
   Sparkles,
   Piano,
+  AudioLines,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -59,6 +60,7 @@ const workNavItems = [
   { href: '/visualizations', label: 'Visualizations', icon: Sparkles },
   { href: '/tools', label: 'Tools', icon: Wrench },
   { href: '/midi-builder', label: 'MIDI Builder', icon: Piano },
+  { href: '/samples', label: 'Sample Library', icon: AudioLines },
 ];
 
 const resourcesNavItems = [

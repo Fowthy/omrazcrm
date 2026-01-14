@@ -29,6 +29,11 @@ import {
   Package,
   MapPin,
   HelpCircle,
+  Wrench,
+  Piano,
+  AudioLines,
+  Timer,
+  Ear,
 } from 'lucide-react';
 
 export default function DocsPage() {
@@ -46,6 +51,7 @@ export default function DocsPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="getting-started">Getting Started</TabsTrigger>
           <TabsTrigger value="projects">Projects & Songs</TabsTrigger>
+          <TabsTrigger value="production">Production Tools</TabsTrigger>
           <TabsTrigger value="planning">Planning</TabsTrigger>
           <TabsTrigger value="management">Management</TabsTrigger>
           <TabsTrigger value="faq">FAQ</TabsTrigger>
@@ -187,6 +193,18 @@ export default function DocsPage() {
                     <span>Songs & Audio Player</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Piano className="h-4 w-4 text-emerald-400" />
+                    <span>MIDI Builder</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <AudioLines className="h-4 w-4 text-pink-400" />
+                    <span>Sample Library</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Wrench className="h-4 w-4 text-orange-400" />
+                    <span>Music Tools</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
                     <CheckSquare className="h-4 w-4 text-green-400" />
                     <span>Kanban Task Board</span>
                   </div>
@@ -233,10 +251,6 @@ export default function DocsPage() {
                   <div className="flex items-center gap-2 text-sm text-zinc-400">
                     <Search className="h-4 w-4 text-zinc-400" />
                     <span>Global Search (⌘K)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-400">
-                    <Settings className="h-4 w-4 text-zinc-400" />
-                    <span>Band Settings</span>
                   </div>
                 </div>
               </div>
@@ -474,6 +488,97 @@ export default function DocsPage() {
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Production Tools */}
+        <TabsContent value="production" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Piano className="h-5 w-5 text-emerald-400" />
+                MIDI Builder
+              </CardTitle>
+              <CardDescription>
+                Create and edit MIDI compositions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-zinc-400">
+              <p className="mb-4">A full-featured piano roll editor for creating MIDI music:</p>
+              <ul className="list-disc list-inside space-y-2">
+                <li><strong>Multi-track editing</strong> - Create multiple instrument tracks</li>
+                <li><strong>Click and drag</strong> - Draw notes by clicking and dragging</li>
+                <li><strong>Piano keyboard</strong> - Click keys to preview notes</li>
+                <li><strong>Save/Load projects</strong> - Save your work and load it later</li>
+                <li><strong>Export to MIDI</strong> - Download as standard MIDI files</li>
+                <li><strong>Adjustable BPM and bars</strong> - Configure tempo and length</li>
+                <li><strong>Track controls</strong> - Mute, solo, volume per track</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AudioLines className="h-5 w-5 text-pink-400" />
+                Sample Library
+              </CardTitle>
+              <CardDescription>
+                Upload and organize audio samples
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-zinc-400">
+              <p className="mb-4">Manage your collection of audio samples:</p>
+              <ul className="list-disc list-inside space-y-2">
+                <li><strong>Upload samples</strong> - Kick, snare, hi-hat, synths, loops, and more</li>
+                <li><strong>Categorize</strong> - Organize by type (drums, bass, fx, vocals, etc.)</li>
+                <li><strong>Tag and search</strong> - Add tags and find samples quickly</li>
+                <li><strong>Preview</strong> - Click to play samples before using them</li>
+                <li><strong>Metadata</strong> - Track BPM and musical key for loops</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-orange-400" />
+                Music Tools
+              </CardTitle>
+              <CardDescription>
+                Practice and production utilities
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-zinc-400">
+              <p className="mb-4">Essential tools for musicians:</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <h4 className="font-medium text-white mb-2 flex items-center gap-2">
+                    <Timer className="h-4 w-4" /> Metronome
+                  </h4>
+                  <p className="text-sm">Adjustable BPM with time signature support and accent patterns.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-white mb-2 flex items-center gap-2">
+                    <Mic className="h-4 w-4" /> Tuner
+                  </h4>
+                  <p className="text-sm">Chromatic tuner with microphone input. Presets for guitar, bass, ukulele.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-white mb-2 flex items-center gap-2">
+                    <Ear className="h-4 w-4" /> Ear Training
+                  </h4>
+                  <p className="text-sm">Practice intervals, chords, and note recognition with scoring.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-white mb-2 flex items-center gap-2">
+                    <Piano className="h-4 w-4" /> Piano Keyboard
+                  </h4>
+                  <p className="text-sm">Interactive keyboard with sustain mode and octave selection.</p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm">Also includes: Drum Pads, Polyrhythm Trainer, BPM Calculator, Delay Time Calculator, and more.</p>
             </CardContent>
           </Card>
         </TabsContent>

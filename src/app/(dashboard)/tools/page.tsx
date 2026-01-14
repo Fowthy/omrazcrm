@@ -2139,7 +2139,7 @@ function IntervalCalculator() {
 export default function ToolsPage() {
   return (
     <div className="space-y-6">
-      <div>
+      <div data-onboarding="tools-header">
         <h1 className="text-3xl font-bold text-white">Music Tools</h1>
         <p className="mt-1 text-zinc-400">
           Practice and production tools for musicians
