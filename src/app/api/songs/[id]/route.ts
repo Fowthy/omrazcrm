@@ -85,6 +85,7 @@ export async function PATCH(
     const {
       title,
       description,
+      lyrics,
       duration,
       bpm,
       musicalKey,
@@ -111,6 +112,7 @@ export async function PATCH(
       .set({
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
+        ...(lyrics !== undefined && { lyrics }),
         ...(duration !== undefined && { duration }),
         ...(bpm !== undefined && { bpm }),
         ...(musicalKey !== undefined && { musicalKey }),

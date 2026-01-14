@@ -52,6 +52,7 @@ export const songs = sqliteTable('songs', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
   description: text('description'),
+  lyrics: text('lyrics'),
   duration: integer('duration'), // Duration in seconds
   bpm: integer('bpm'),
   musicalKey: text('musical_key'),
