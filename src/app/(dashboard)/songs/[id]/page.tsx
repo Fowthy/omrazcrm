@@ -126,6 +126,11 @@ export default function SongDetailPage() {
     timeSignature: '4/4',
   });
 
+  // Comments state
+  const [newComment, setNewComment] = useState('');
+  const [commentTimestamp, setCommentTimestamp] = useState<number | null>(null);
+  const [isAddingComment, setIsAddingComment] = useState(false);
+
   // Fetch song
   const { data: song, isLoading, refetch } = useQuery<Song>({
     queryKey: ['song', songId],
@@ -238,6 +243,61 @@ export default function SongDetailPage() {
       toast.error('Failed to upload file');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Comment functions
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+
+    setIsAddingComment(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newComment,
+          timestamp: commentTimestamp,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to add comment');
+
+      await refetch();
+      setNewComment('');
+      setCommentTimestamp(null);
+      toast.success('Comment added!');
+    } catch (error) {
+      toast.error('Failed to add comment');
+    } finally {
+      setIsAddingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const res = await fetch(`/api/songs/${songId}/comments?commentId=${commentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to delete comment');
+
+      await refetch();
+      toast.success('Comment deleted');
+    } catch (error) {
+      toast.error('Failed to delete comment');
+    }
+  };
+
+  const formatTimestamp = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const addTimestampComment = () => {
+    if (audioRef.current) {
+      setCommentTimestamp(audioRef.current.currentTime);
     }
   };
 
@@ -630,15 +690,121 @@ export default function SongDetailPage() {
         </TabsContent>
 
         <TabsContent value="comments" className="space-y-4">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <MessageSquare className="h-12 w-12 text-zinc-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">No comments yet</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Add timestamped comments while listening
-              </p>
+          {/* Add Comment Form */}
+          <Card>
+            <CardContent className="pt-4">
+              <div className="space-y-3">
+                <Textarea
+                  placeholder="Add a comment or note..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {commentTimestamp !== null ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatTimestamp(commentTimestamp)}
+                        <button
+                          onClick={() => setCommentTimestamp(null)}
+                          className="ml-1 hover:text-red-400"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addTimestampComment}
+                        disabled={!currentlyPlaying}
+                        title={!currentlyPlaying ? "Play audio first to add timestamp" : "Add current timestamp"}
+                      >
+                        <Clock className="h-4 w-4 mr-1" />
+                        Add Timestamp
+                      </Button>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || isAddingComment}
+                    size="sm"
+                  >
+                    {isAddingComment ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Comment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Comments List */}
+          {song.comments && song.comments.length > 0 ? (
+            <div className="space-y-3">
+              {song.comments.map((comment) => (
+                <Card key={comment.id}>
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 space-y-2">
+                        {comment.timestamp !== null && (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 cursor-pointer hover:bg-violet-500/20"
+                            onClick={() => {
+                              if (audioRef.current && currentlyPlaying) {
+                                audioRef.current.currentTime = comment.timestamp!;
+                                setCurrentTime(comment.timestamp!);
+                              }
+                            }}
+                          >
+                            <Clock className="h-3 w-3" />
+                            {formatTimestamp(comment.timestamp)}
+                          </Badge>
+                        )}
+                        <p className="text-sm text-zinc-300 whitespace-pre-wrap">{comment.content}</p>
+                        <p className="text-xs text-zinc-500">
+                          {formatDate(comment.createdAt)}
+                        </p>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="text-red-400"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <MessageSquare className="h-10 w-10 text-zinc-500" />
+                <p className="mt-3 text-sm text-zinc-400">
+                  No comments yet. Add your first note above!
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="lyrics" className="space-y-4">
