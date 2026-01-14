@@ -56,9 +56,11 @@ import {
   VolumeX,
   Download,
   Lightbulb,
+  Sparkles,
 } from 'lucide-react';
 import { songStatuses, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { SongVisualizer } from '@/components/song-visualizer';
 
 interface SongFile {
   id: string;
@@ -92,6 +94,31 @@ interface Song {
     timestamp: number | null;
     createdAt: string;
   }>;
+}
+
+interface VisualizationParams {
+  colorScheme: string;
+  backgroundColor: string;
+  sensitivity: number;
+  smoothing: number;
+  barCount: number;
+  barWidth: number;
+  barGap: number;
+  barRadius: number;
+  particleCount: number;
+  particleSize: number;
+  particleSpeed: number;
+  rotationSpeed: number;
+  mirrorMode: boolean;
+  glowIntensity: number;
+  reactToAudio: boolean;
+}
+
+interface Visualization {
+  id: string;
+  name: string;
+  visualType: string;
+  parameters: VisualizationParams;
 }
 
 export default function SongDetailPage() {
@@ -142,6 +169,9 @@ export default function SongDetailPage() {
   const [notesText, setNotesText] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
 
+  // Visualizer state
+  const [showVisualizer, setShowVisualizer] = useState(true);
+
   // Fetch song
   const { data: song, isLoading, refetch } = useQuery<Song>({
     queryKey: ['song', songId],
@@ -151,6 +181,21 @@ export default function SongDetailPage() {
       return res.json();
     },
   });
+
+  // Fetch linked visualizations
+  const { data: visualizations } = useQuery<Visualization[]>({
+    queryKey: ['visualizations', 'song', songId],
+    queryFn: async () => {
+      const res = await fetch('/api/visualizations');
+      if (!res.ok) throw new Error('Failed to fetch visualizations');
+      const all = await res.json();
+      // Filter visualizations linked to this song
+      return all.filter((v: { songId: string | null }) => v.songId === songId);
+    },
+  });
+
+  // Get the first linked visualization (could add selector later)
+  const linkedVisualization = visualizations?.[0] || null;
 
   // Initialize edit form when song loads
   if (song && !editForm.title && song.title !== editForm.title) {
@@ -573,6 +618,16 @@ export default function SongDetailPage() {
         </div>
       </div>
 
+      {/* Visualizer (shown when linked and audio is playing) */}
+      {linkedVisualization && currentFile && showVisualizer && (
+        <SongVisualizer
+          visualization={linkedVisualization}
+          audioElement={audioRef.current}
+          isPlaying={isPlaying}
+          onClose={() => setShowVisualizer(false)}
+        />
+      )}
+
       {/* Audio Player (shown when playing) */}
       {currentFile && (
         <Card className="border-violet-500/50 bg-gradient-to-r from-violet-500/10 to-cyan-500/10">
@@ -608,6 +663,11 @@ export default function SongDetailPage() {
               </div>
 
               <div className="flex items-center gap-2">
+                {linkedVisualization && !showVisualizer && (
+                  <Button variant="ghost" size="icon" onClick={() => setShowVisualizer(true)} title="Show visualizer">
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" onClick={toggleMute}>
                   {isMuted ? (
                     <VolumeX className="h-4 w-4" />
