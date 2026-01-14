@@ -58,7 +58,7 @@ export function SongVisualizer({ visualization, audioElement, isPlaying, onClose
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationRef = useRef<number | null>(null);
   const particlesRef = useRef<Array<{ x: number; y: number; vx: number; vy: number; size: number }>>([]);
 
@@ -73,75 +73,45 @@ export function SongVisualizer({ visualization, audioElement, isPlaying, onClose
     return COLOR_SCHEMES[params.colorScheme] || COLOR_SCHEMES.neon;
   }, [params.colorScheme]);
 
-  // Initialize audio context and analyser
+  // Initialize audio context and analyser using captureStream (doesn't intercept audio)
   useEffect(() => {
     if (!audioElement) return;
 
     const initAudio = async () => {
       try {
-        // Create or reuse AudioContext
+        // Create AudioContext if needed
         if (!audioContextRef.current) {
           audioContextRef.current = new AudioContext();
         }
 
-        // Resume if suspended (browsers require user interaction)
+        // Resume if suspended
         if (audioContextRef.current.state === 'suspended') {
           await audioContextRef.current.resume();
         }
 
-        // Check if this audio element already has a source node
-        // We store it on the element itself to persist across component remounts
-        const existingSource = (audioElement as HTMLAudioElement & { _sourceNode?: MediaElementAudioSourceNode })._sourceNode;
-
-        if (existingSource) {
-          // Reuse existing source node
-          sourceRef.current = existingSource;
-
-          // Create new analyser if needed
-          if (!analyserRef.current) {
-            analyserRef.current = audioContextRef.current.createAnalyser();
-            analyserRef.current.fftSize = 256;
-            analyserRef.current.smoothingTimeConstant = params.smoothing;
-          }
-
-          // Disconnect and reconnect with analyser in the chain
-          try {
-            sourceRef.current.disconnect();
-          } catch (e) {
-            // Ignore if not connected
-          }
-
-          sourceRef.current.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
-          setIsInitialized(true);
-        } else if (!sourceRef.current) {
-          // Create new source node
-          sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
-          // Store reference on the element for future use
-          (audioElement as HTMLAudioElement & { _sourceNode?: MediaElementAudioSourceNode })._sourceNode = sourceRef.current;
+        // Use captureStream to analyze audio WITHOUT intercepting it
+        // This allows the audio to play normally through speakers
+        if (!sourceRef.current && 'captureStream' in audioElement) {
+          const stream = (audioElement as HTMLAudioElement & { captureStream: () => MediaStream }).captureStream();
+          sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
 
           analyserRef.current = audioContextRef.current.createAnalyser();
           analyserRef.current.fftSize = 256;
           analyserRef.current.smoothingTimeConstant = params.smoothing;
 
+          // Connect source to analyser only (NOT to destination - audio plays normally)
           sourceRef.current.connect(analyserRef.current);
-          analyserRef.current.connect(audioContextRef.current.destination);
           setIsInitialized(true);
         }
       } catch (e) {
-        console.error('Error initializing audio:', e);
+        console.error('Error initializing audio analyser:', e);
+        // Fallback: visualization will use animated fake data
       }
     };
 
-    // Initialize immediately
-    initAudio();
-
-    // Also try on play event in case audio element wasn't ready
-    const handlePlay = () => {
-      if (!isInitialized) {
-        initAudio();
-      }
-      // Always resume context on play
+    // Initialize on play event
+    const handlePlay = async () => {
+      await initAudio();
       if (audioContextRef.current?.state === 'suspended') {
         audioContextRef.current.resume();
       }
@@ -149,10 +119,15 @@ export function SongVisualizer({ visualization, audioElement, isPlaying, onClose
 
     audioElement.addEventListener('play', handlePlay);
 
+    // Also try immediately if already playing
+    if (!audioElement.paused) {
+      initAudio();
+    }
+
     return () => {
       audioElement.removeEventListener('play', handlePlay);
     };
-  }, [audioElement, params.smoothing, isInitialized]);
+  }, [audioElement, params.smoothing]);
 
   // Initialize particles
   useEffect(() => {
