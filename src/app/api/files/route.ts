@@ -3,8 +3,8 @@ import { auth } from '@/lib/auth';
 import { db, files, fileVersions, users } from '@/lib/db';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { put } from '@vercel/blob';
+
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
 
@@ -91,22 +91,18 @@ export async function POST(request: Request) {
     else if (file.name.endsWith('.rpp') || file.name.endsWith('.rpp-bak')) fileType = 'reaper';
     else if (file.name.endsWith('.mid') || file.name.endsWith('.midi')) fileType = 'midi';
 
-    // Create uploads directory
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    await mkdir(uploadsDir, { recursive: true });
-
     // Generate unique filename
-    const ext = path.extname(file.name);
     const fileId = nanoid();
-    const fileName = `${fileId}${ext}`;
-    const filePath = path.join(uploadsDir, fileName);
+    const ext = file.name.split('.').pop() || '';
+    const blobPath = `files/${fileId}${ext ? `.${ext}` : ''}`;
 
-    // Write file
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: 'public',
+      addRandomSuffix: false,
+    });
 
-    // Create file record
+    // Create file record with blob URL
     const newFile = await db
       .insert(files)
       .values({
@@ -115,7 +111,7 @@ export async function POST(request: Request) {
         type: fileType,
         mimeType: mimeType,
         size: file.size,
-        path: `/uploads/${fileName}`,
+        path: blob.url,
         description: description || null,
         uploadedById: session.user.id,
         projectId: projectId || null,
@@ -128,7 +124,7 @@ export async function POST(request: Request) {
       id: nanoid(),
       fileId: fileId,
       version: 1,
-      path: `/uploads/${fileName}`,
+      path: blob.url,
       size: file.size,
       notes: 'Initial upload',
     });

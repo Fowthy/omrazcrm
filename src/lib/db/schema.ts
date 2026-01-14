@@ -590,3 +590,31 @@ export const midiProjects = sqliteTable('midi_projects', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
 });
+
+// ============================================
+// SAMPLE LIBRARY
+// ============================================
+
+export const samples = sqliteTable('samples', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  // Category: kick, snare, hihat, clap, tom, cymbal, percussion, bass, synth, fx, vocal, loop, other
+  category: text('category').notNull().default('other'),
+  // Tags for searching (comma-separated)
+  tags: text('tags'),
+  // File info
+  filePath: text('file_path').notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileSize: integer('file_size').notNull(),
+  // Audio properties
+  duration: real('duration'), // Duration in seconds
+  sampleRate: integer('sample_rate'),
+  channels: integer('channels'), // 1 = mono, 2 = stereo
+  // Optional metadata
+  bpm: integer('bpm'), // For loops
+  musicalKey: text('musical_key'), // For melodic samples
+  // Metadata
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  uploadedById: text('uploaded_by_id').notNull().references(() => users.id),
+});

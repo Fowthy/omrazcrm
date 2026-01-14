@@ -47,37 +47,46 @@ export function WelcomeDialog() {
           </div>
           <DialogTitle className="text-2xl">Welcome to Omraz Studio!</DialogTitle>
           <DialogDescription className="text-base">
-            Your all-in-one band management platform. Manage projects, songs, tasks, rehearsals, and more.
+            Band management and music production hub. Create, collaborate, and perform.
           </DialogDescription>
         </DialogHeader>
 
         <div className="py-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
                 1
               </div>
               <div className="text-sm">
-                <span className="font-medium text-white">Create Projects</span>
-                <span className="text-zinc-400"> - Organize albums, EPs, singles</span>
+                <span className="font-medium text-white">Projects & Songs</span>
+                <span className="text-zinc-400"> - Organize your music</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
                 2
               </div>
               <div className="text-sm">
-                <span className="font-medium text-white">Add Songs</span>
-                <span className="text-zinc-400"> - Track files, versions, lyrics</span>
+                <span className="font-medium text-white">MIDI Builder</span>
+                <span className="text-zinc-400"> - Create compositions</span>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
                 3
               </div>
               <div className="text-sm">
-                <span className="font-medium text-white">Collaborate</span>
-                <span className="text-zinc-400"> - Tasks, rehearsals, setlists</span>
+                <span className="font-medium text-white">Tools & Samples</span>
+                <span className="text-zinc-400"> - Tuner, metronome, library</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 rounded-lg bg-zinc-800/50 p-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
+                4
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-white">Band Management</span>
+                <span className="text-zinc-400"> - Tasks, shows, rehearsals</span>
               </div>
             </div>
           </div>

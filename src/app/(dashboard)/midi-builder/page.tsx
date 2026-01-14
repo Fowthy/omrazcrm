@@ -703,7 +703,7 @@ export default function MidiBuilderPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] -m-4 sm:-m-6">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900/50">
+      <div className="flex items-center justify-between p-3 border-b border-zinc-800 bg-zinc-900/50" data-onboarding="midi-header">
         <div className="flex items-center gap-4">
           {/* File menu */}
           <DropdownMenu>
