@@ -75,16 +75,51 @@ export function SongVisualizer({ visualization, audioElement, isPlaying, onClose
 
   // Initialize audio context and analyser
   useEffect(() => {
-    if (!audioElement || isInitialized) return;
+    if (!audioElement) return;
 
-    const initAudio = () => {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext();
-      }
+    const initAudio = async () => {
+      try {
+        // Create or reuse AudioContext
+        if (!audioContextRef.current) {
+          audioContextRef.current = new AudioContext();
+        }
 
-      if (!sourceRef.current && audioElement) {
-        try {
+        // Resume if suspended (browsers require user interaction)
+        if (audioContextRef.current.state === 'suspended') {
+          await audioContextRef.current.resume();
+        }
+
+        // Check if this audio element already has a source node
+        // We store it on the element itself to persist across component remounts
+        const existingSource = (audioElement as HTMLAudioElement & { _sourceNode?: MediaElementAudioSourceNode })._sourceNode;
+
+        if (existingSource) {
+          // Reuse existing source node
+          sourceRef.current = existingSource;
+
+          // Create new analyser if needed
+          if (!analyserRef.current) {
+            analyserRef.current = audioContextRef.current.createAnalyser();
+            analyserRef.current.fftSize = 256;
+            analyserRef.current.smoothingTimeConstant = params.smoothing;
+          }
+
+          // Disconnect and reconnect with analyser in the chain
+          try {
+            sourceRef.current.disconnect();
+          } catch (e) {
+            // Ignore if not connected
+          }
+
+          sourceRef.current.connect(analyserRef.current);
+          analyserRef.current.connect(audioContextRef.current.destination);
+          setIsInitialized(true);
+        } else if (!sourceRef.current) {
+          // Create new source node
           sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
+          // Store reference on the element for future use
+          (audioElement as HTMLAudioElement & { _sourceNode?: MediaElementAudioSourceNode })._sourceNode = sourceRef.current;
+
           analyserRef.current = audioContextRef.current.createAnalyser();
           analyserRef.current.fftSize = 256;
           analyserRef.current.smoothingTimeConstant = params.smoothing;
@@ -92,18 +127,30 @@ export function SongVisualizer({ visualization, audioElement, isPlaying, onClose
           sourceRef.current.connect(analyserRef.current);
           analyserRef.current.connect(audioContextRef.current.destination);
           setIsInitialized(true);
-        } catch (e) {
-          // Source already connected
-          console.log('Audio source already connected');
         }
+      } catch (e) {
+        console.error('Error initializing audio:', e);
       }
     };
 
-    // Initialize on first play
-    audioElement.addEventListener('play', initAudio, { once: true });
+    // Initialize immediately
+    initAudio();
+
+    // Also try on play event in case audio element wasn't ready
+    const handlePlay = () => {
+      if (!isInitialized) {
+        initAudio();
+      }
+      // Always resume context on play
+      if (audioContextRef.current?.state === 'suspended') {
+        audioContextRef.current.resume();
+      }
+    };
+
+    audioElement.addEventListener('play', handlePlay);
 
     return () => {
-      audioElement.removeEventListener('play', initAudio);
+      audioElement.removeEventListener('play', handlePlay);
     };
   }, [audioElement, params.smoothing, isInitialized]);
 
