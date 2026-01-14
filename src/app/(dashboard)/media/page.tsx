@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { uploadFile } from '@/lib/upload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -179,14 +180,26 @@ export default function MediaPage() {
     e.preventDefault();
 
     if (addMode === 'upload' && selectedFile) {
-      const formDataToSend = new FormData();
-      formDataToSend.append('file', selectedFile);
-      formDataToSend.append('title', formData.title);
-      formDataToSend.append('description', formData.description);
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('tags', formData.tags);
-      if (formData.date) formDataToSend.append('date', formData.date);
-      createMutation.mutate(formDataToSend);
+      // Use client upload for large files
+      try {
+        const res = await uploadFile({
+          file: selectedFile,
+          endpoint: '/api/media',
+          metadata: {
+            title: formData.title,
+            description: formData.description,
+            category: formData.category,
+            tags: formData.tags,
+            date: formData.date || undefined,
+          },
+        });
+        if (!res.ok) throw new Error('Failed to upload');
+        queryClient.invalidateQueries({ queryKey: ['media'] });
+        setIsAddDialogOpen(false);
+        resetForm();
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
     } else if (addMode === 'youtube' && formData.youtubeUrl) {
       createMutation.mutate({
         title: formData.title,

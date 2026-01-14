@@ -168,12 +168,37 @@ export async function POST(request: Request) {
 
       return NextResponse.json(result[0], { status: 201 });
     } else {
-      // Handle YouTube link or JSON body
+      // Handle YouTube link, client upload, or JSON body
       const body = await request.json();
-      const { title, description, category, youtubeUrl, tags, date } = body;
+      const { title, description, category, youtubeUrl, tags, date, blobUrl, fileName, fileSize, mimeType } = body;
 
       if (!title || !category) {
         return NextResponse.json({ error: 'Title and category are required' }, { status: 400 });
+      }
+
+      // Handle client-side upload (JSON with blob URL)
+      if (blobUrl) {
+        const mediaType = mimeType?.startsWith('image/') ? 'photo' : 'video';
+        const id = nanoid();
+
+        const result = await db
+          .insert(media)
+          .values({
+            id,
+            title,
+            description,
+            type: mediaType,
+            category,
+            filePath: blobUrl,
+            mimeType: mimeType || 'application/octet-stream',
+            fileSize: fileSize || 0,
+            tags,
+            date: date ? new Date(date) : null,
+            createdById: session.user.id,
+          })
+          .returning();
+
+        return NextResponse.json(result[0], { status: 201 });
       }
 
       if (youtubeUrl) {
@@ -205,7 +230,7 @@ export async function POST(request: Request) {
         return NextResponse.json(result[0], { status: 201 });
       }
 
-      return NextResponse.json({ error: 'Either file or YouTube URL is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Either file, blobUrl, or YouTube URL is required' }, { status: 400 });
     }
   } catch (error) {
     console.error('Error creating media:', error);

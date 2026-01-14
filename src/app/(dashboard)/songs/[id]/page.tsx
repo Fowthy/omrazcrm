@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { uploadFile } from '@/lib/upload';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -104,7 +105,7 @@ export default function SongDetailPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFileState, setUploadFileState] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Audio player state
@@ -204,23 +205,24 @@ export default function SongDetailPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadFile(file);
+      setUploadFileState(file);
       setIsUploadDialogOpen(true);
     }
   };
 
   const handleUpload = async () => {
-    if (!uploadFile) return;
+    if (!uploadFileState) return;
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-      formData.append('songId', songId);
-
-      const res = await fetch('/api/files', {
-        method: 'POST',
-        body: formData,
+      const res = await uploadFile({
+        file: uploadFileState,
+        endpoint: '/api/files',
+        metadata: { songId },
+        onProgress: (progress) => {
+          // Could add progress indicator here
+          console.log(`Upload progress: ${progress}%`);
+        },
       });
 
       if (!res.ok) throw new Error('Failed to upload file');
@@ -228,7 +230,7 @@ export default function SongDetailPage() {
       await refetch();
       toast.success('File uploaded!');
       setIsUploadDialogOpen(false);
-      setUploadFile(null);
+      setUploadFileState(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -758,13 +760,13 @@ export default function SongDetailPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {uploadFile && (
+          {uploadFileState && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 rounded-lg bg-zinc-800">
                 <FileAudio className="h-8 w-8 text-violet-400" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">{uploadFile.name}</p>
-                  <p className="text-sm text-zinc-400">{formatFileSize(uploadFile.size)}</p>
+                  <p className="font-medium text-white truncate">{uploadFileState.name}</p>
+                  <p className="text-sm text-zinc-400">{formatFileSize(uploadFileState.size)}</p>
                 </div>
               </div>
             </div>
@@ -773,7 +775,7 @@ export default function SongDetailPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setIsUploadDialogOpen(false);
-              setUploadFile(null);
+              setUploadFileState(null);
             }}>
               Cancel
             </Button>

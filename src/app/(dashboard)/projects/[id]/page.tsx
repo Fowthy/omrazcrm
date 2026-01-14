@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { uploadFile } from '@/lib/upload';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -251,13 +252,10 @@ export default function ProjectDetailPage() {
     setIsUploadingFile(true);
     try {
       for (const file of Array.from(selectedFiles)) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('projectId', projectId);
-
-        const res = await fetch('/api/files', {
-          method: 'POST',
-          body: formData,
+        const res = await uploadFile({
+          file,
+          endpoint: '/api/files',
+          metadata: { projectId },
         });
 
         if (!res.ok) {
