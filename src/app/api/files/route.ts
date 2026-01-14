@@ -71,6 +71,57 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const contentType = request.headers.get('content-type') || '';
+
+    // Handle client-side upload (JSON with blob URL)
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      const { blobUrl, fileName, fileSize, mimeType, projectId, songId, description } = body;
+
+      if (!blobUrl || !fileName) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      // Determine file type
+      let fileType = 'other';
+      if (mimeType?.startsWith('audio/')) fileType = 'audio';
+      else if (mimeType?.startsWith('image/')) fileType = 'image';
+      else if (mimeType?.startsWith('video/')) fileType = 'video';
+      else if (mimeType?.includes('pdf') || mimeType?.includes('document')) fileType = 'document';
+      else if (fileName.endsWith('.rpp') || fileName.endsWith('.rpp-bak')) fileType = 'reaper';
+      else if (fileName.endsWith('.mid') || fileName.endsWith('.midi')) fileType = 'midi';
+
+      const fileId = nanoid();
+
+      const newFile = await db
+        .insert(files)
+        .values({
+          id: fileId,
+          name: fileName,
+          type: fileType,
+          mimeType: mimeType || 'application/octet-stream',
+          size: fileSize || 0,
+          path: blobUrl,
+          description: description || null,
+          uploadedById: session.user.id,
+          projectId: projectId || null,
+          songId: songId || null,
+        })
+        .returning();
+
+      await db.insert(fileVersions).values({
+        id: nanoid(),
+        fileId: fileId,
+        version: 1,
+        path: blobUrl,
+        size: fileSize || 0,
+        notes: 'Initial upload',
+      });
+
+      return NextResponse.json(newFile[0], { status: 201 });
+    }
+
+    // Handle server-side upload (FormData with file) - for small files
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const projectId = formData.get('projectId') as string | null;

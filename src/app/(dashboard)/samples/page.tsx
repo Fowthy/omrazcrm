@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import { uploadFile } from '@/lib/upload';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -106,7 +107,7 @@ export default function SamplesPage() {
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
 
   // Upload form state
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFileState, setUploadFileState] = useState<File | null>(null);
   const [uploadName, setUploadName] = useState('');
   const [uploadCategory, setUploadCategory] = useState('other');
   const [uploadTags, setUploadTags] = useState('');
@@ -129,19 +130,18 @@ export default function SamplesPage() {
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!uploadFile) throw new Error('No file selected');
+      if (!uploadFileState) throw new Error('No file selected');
 
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-      formData.append('name', uploadName || uploadFile.name);
-      formData.append('category', uploadCategory);
-      if (uploadTags) formData.append('tags', uploadTags);
-      if (uploadBpm) formData.append('bpm', uploadBpm);
-      if (uploadKey) formData.append('musicalKey', uploadKey);
-
-      const res = await fetch('/api/samples', {
-        method: 'POST',
-        body: formData,
+      const res = await uploadFile({
+        file: uploadFileState,
+        endpoint: '/api/samples',
+        metadata: {
+          name: uploadName || uploadFileState.name,
+          category: uploadCategory,
+          tags: uploadTags || undefined,
+          bpm: uploadBpm || undefined,
+          musicalKey: uploadKey || undefined,
+        },
       });
       if (!res.ok) throw new Error('Failed to upload sample');
       return res.json();
@@ -185,7 +185,7 @@ export default function SamplesPage() {
   });
 
   const resetUploadForm = () => {
-    setUploadFile(null);
+    setUploadFileState(null);
     setUploadName('');
     setUploadCategory('other');
     setUploadTags('');
@@ -435,7 +435,7 @@ export default function SamplesPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    setUploadFile(file);
+                    setUploadFileState(file);
                     if (!uploadName) setUploadName(file.name.replace(/\.[^/.]+$/, ''));
                   }
                 }}
@@ -501,7 +501,7 @@ export default function SamplesPage() {
             </Button>
             <Button
               onClick={() => uploadMutation.mutate()}
-              disabled={!uploadFile || uploadMutation.isPending}
+              disabled={!uploadFileState || uploadMutation.isPending}
             >
               {uploadMutation.isPending ? (
                 <>

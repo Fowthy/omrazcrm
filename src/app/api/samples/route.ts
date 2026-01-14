@@ -76,6 +76,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const contentType = request.headers.get('content-type') || '';
+
+    // Handle client-side upload (JSON with blob URL)
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      const { blobUrl, fileName, fileSize, mimeType, name, category, tags, bpm, musicalKey } = body;
+
+      if (!blobUrl || !fileName) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      const sampleId = nanoid();
+      const ext = fileName.split('.').pop() || '';
+
+      const newSample = await db
+        .insert(samples)
+        .values({
+          id: sampleId,
+          name: name || fileName.replace(`.${ext}`, ''),
+          category: SAMPLE_CATEGORIES.includes(category || '') ? category : 'other',
+          tags: tags || null,
+          filePath: blobUrl,
+          mimeType: mimeType || 'audio/mpeg',
+          fileSize: fileSize || 0,
+          bpm: bpm ? parseInt(bpm) : null,
+          musicalKey: musicalKey || null,
+          uploadedById: session.user.id,
+        })
+        .returning();
+
+      return NextResponse.json(newSample[0], { status: 201 });
+    }
+
+    // Handle server-side upload (FormData) - for small files
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const name = formData.get('name') as string | null;
