@@ -74,6 +74,7 @@ interface Song {
   id: string;
   title: string;
   description: string | null;
+  lyrics: string | null;
   duration: number | null;
   bpm: number | null;
   musicalKey: string | null;
@@ -130,6 +131,16 @@ export default function SongDetailPage() {
   const [newComment, setNewComment] = useState('');
   const [commentTimestamp, setCommentTimestamp] = useState<number | null>(null);
   const [isAddingComment, setIsAddingComment] = useState(false);
+
+  // Lyrics state
+  const [isEditingLyrics, setIsEditingLyrics] = useState(false);
+  const [lyricsText, setLyricsText] = useState('');
+  const [isSavingLyrics, setIsSavingLyrics] = useState(false);
+
+  // Notes state (pinned sidebar)
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesText, setNotesText] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
 
   // Fetch song
   const { data: song, isLoading, refetch } = useQuery<Song>({
@@ -298,6 +309,60 @@ export default function SongDetailPage() {
   const addTimestampComment = () => {
     if (audioRef.current) {
       setCommentTimestamp(audioRef.current.currentTime);
+    }
+  };
+
+  // Lyrics functions
+  const handleEditLyrics = () => {
+    setLyricsText(song?.lyrics || '');
+    setIsEditingLyrics(true);
+  };
+
+  const handleSaveLyrics = async () => {
+    setIsSavingLyrics(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lyrics: lyricsText }),
+      });
+
+      if (!res.ok) throw new Error('Failed to save lyrics');
+
+      await refetch();
+      setIsEditingLyrics(false);
+      toast.success('Lyrics saved!');
+    } catch (error) {
+      toast.error('Failed to save lyrics');
+    } finally {
+      setIsSavingLyrics(false);
+    }
+  };
+
+  // Notes functions (pinned sidebar)
+  const handleEditNotes = () => {
+    setNotesText(song?.description || '');
+    setIsEditingNotes(true);
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    try {
+      const res = await fetch(`/api/songs/${songId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: notesText }),
+      });
+
+      if (!res.ok) throw new Error('Failed to save notes');
+
+      await refetch();
+      setIsEditingNotes(false);
+      toast.success('Notes saved!');
+    } catch (error) {
+      toast.error('Failed to save notes');
+    } finally {
+      setIsSavingNotes(false);
     }
   };
 
@@ -611,21 +676,11 @@ export default function SongDetailPage() {
         </Card>
       </div>
 
-      {/* Notes/Ideas Section */}
-      {song.description && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="h-5 w-5 text-yellow-400" />
-              <h3 className="font-semibold text-white">Notes & Ideas</h3>
-            </div>
-            <p className="text-zinc-300 whitespace-pre-wrap">{song.description}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabs */}
-      <Tabs defaultValue="files" className="space-y-4">
+      {/* Main Content with Pinned Notes Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Side: Tabs */}
+        <div className="flex-1 min-w-0">
+          <Tabs defaultValue="files" className="space-y-4">
         <TabsList>
           <TabsTrigger value="files">Files ({song.files?.length || 0})</TabsTrigger>
           <TabsTrigger value="comments">Comments ({song.comments?.length || 0})</TabsTrigger>
@@ -808,21 +863,138 @@ export default function SongDetailPage() {
         </TabsContent>
 
         <TabsContent value="lyrics" className="space-y-4">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <FileAudio className="h-12 w-12 text-zinc-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">No lyrics yet</h3>
-              <p className="mt-2 text-sm text-zinc-400">
-                Add lyrics and track different versions
-              </p>
-              <Button className="mt-4" variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Lyrics
-              </Button>
-            </CardContent>
-          </Card>
+          {isEditingLyrics ? (
+            <Card>
+              <CardContent className="pt-4 space-y-4">
+                <Textarea
+                  value={lyricsText}
+                  onChange={(e) => setLyricsText(e.target.value)}
+                  placeholder="Enter lyrics here...
+
+[Verse 1]
+Your lyrics go here...
+
+[Chorus]
+The chorus goes here..."
+                  rows={20}
+                  className="resize-none font-mono text-sm"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditingLyrics(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSaveLyrics}
+                    disabled={isSavingLyrics}
+                  >
+                    {isSavingLyrics ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Save Lyrics
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : song?.lyrics ? (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-medium text-white">Lyrics</h3>
+                  <Button variant="outline" size="sm" onClick={handleEditLyrics}>
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                </div>
+                <pre className="whitespace-pre-wrap font-sans text-sm text-zinc-300 leading-relaxed">
+                  {song.lyrics}
+                </pre>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <FileAudio className="h-12 w-12 text-zinc-500" />
+                <h3 className="mt-4 text-lg font-medium text-white">No lyrics yet</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Add lyrics for this song
+                </p>
+                <Button className="mt-4" variant="outline" onClick={handleEditLyrics}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Lyrics
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
-      </Tabs>
+          </Tabs>
+        </div>
+
+        {/* Right Side: Pinned Notes */}
+        <div className="lg:w-80 lg:flex-shrink-0">
+          <div className="lg:sticky lg:top-6">
+            <Card className="border-yellow-500/30 bg-yellow-500/5">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-yellow-400" />
+                    <h3 className="font-semibold text-white">Notes & Ideas</h3>
+                  </div>
+                  {!isEditingNotes && (
+                    <Button variant="ghost" size="sm" onClick={handleEditNotes}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {isEditingNotes ? (
+                  <div className="space-y-3">
+                    <Textarea
+                      value={notesText}
+                      onChange={(e) => setNotesText(e.target.value)}
+                      placeholder="Add notes, ideas, prompts for this song..."
+                      rows={8}
+                      className="resize-none text-sm"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditingNotes(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveNotes}
+                        disabled={isSavingNotes}
+                      >
+                        {isSavingNotes ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Save'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : song.description ? (
+                  <p className="text-sm text-zinc-300 whitespace-pre-wrap">{song.description}</p>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-zinc-500 mb-2">No notes yet</p>
+                    <Button variant="outline" size="sm" onClick={handleEditNotes}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Notes
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
