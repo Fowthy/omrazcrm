@@ -551,6 +551,7 @@ export default function SongDetailPage() {
         <audio
           ref={audioRef}
           src={currentFile.path}
+          crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
