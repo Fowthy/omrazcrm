@@ -183,6 +183,24 @@ function playDrumSound(type: 'kick' | 'snare' | 'hihat' | 'clap' | 'tom', volume
   }
 }
 
+function playWaveform(type: 'sine' | 'sawtooth' | 'triangle', frequency: number = 440, duration: number = 0.1, volume: number = 0.5) {
+  const ctx = getAudioContext();
+  const oscillator = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  oscillator.frequency.value = frequency;
+  oscillator.type = type;
+
+  gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+  oscillator.start(ctx.currentTime);
+  oscillator.stop(ctx.currentTime + duration);
+}
+
 // ============================================
 // METRONOME COMPONENT
 // ============================================
@@ -1430,60 +1448,101 @@ function SongTimeCalculator() {
 // POLYRHYTHM TOOL
 // ============================================
 
+type SoundType = 'kick' | 'snare' | 'hihat' | 'clap' | 'tom' | 'sine' | 'sawtooth' | 'triangle';
+
+interface RhythmConfig {
+  id: number;
+  rhythm: number;
+  subdivision: number;
+  sound: SoundType;
+  volume: number;
+  frequency: number;
+  currentBeat: number;
+  color: string;
+}
+
 function PolyrhythmTool() {
-  const [rhythm1, setRhythm1] = useState(3);
-  const [rhythm2, setRhythm2] = useState(2);
+  const [rhythms, setRhythms] = useState<RhythmConfig[]>([
+    { id: 1, rhythm: 3, subdivision: 1, sound: 'kick', volume: 0.7, frequency: 880, currentBeat: 0, color: 'amber' },
+    { id: 2, rhythm: 2, subdivision: 1, sound: 'snare', volume: 0.7, frequency: 440, currentBeat: 0, color: 'violet' },
+  ]);
   const [bpm, setBpm] = useState(60);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBeat1, setCurrentBeat1] = useState(0);
-  const [currentBeat2, setCurrentBeat2] = useState(0);
-  const [subdivision1, setSubdivision1] = useState(1); // 1 = quarter, 2 = 8th, 4 = 16th
-  const [subdivision2, setSubdivision2] = useState(1);
-  const [sound1, setSound1] = useState<'kick' | 'snare' | 'hihat' | 'clap' | 'tom'>('kick');
-  const [sound2, setSound2] = useState<'kick' | 'snare' | 'hihat' | 'clap' | 'tom'>('snare');
-  const intervalRef1 = useRef<NodeJS.Timeout | null>(null);
-  const intervalRef2 = useRef<NodeJS.Timeout | null>(null);
+  const intervalRefs = useRef<Map<number, NodeJS.Timeout>>(new Map());
+  const nextId = useRef(3);
 
-  const cycleDuration = (60 / bpm) * 1000 * rhythm2; // Full cycle in ms
-  const totalBeats1 = rhythm1 * subdivision1;
-  const totalBeats2 = rhythm2 * subdivision2;
+  const baseRhythm = rhythms.length > 0 ? rhythms[rhythms.length - 1].rhythm : 2;
+  const cycleDuration = bpm > 0 ? (60 / bpm) * 1000 * baseRhythm : 1000000; // Full cycle in ms
+
+  const playSound = (config: RhythmConfig) => {
+    if (['sine', 'sawtooth', 'triangle'].includes(config.sound)) {
+      playWaveform(config.sound as 'sine' | 'sawtooth' | 'triangle', config.frequency, 0.1, config.volume);
+    } else {
+      playDrumSound(config.sound as 'kick' | 'snare' | 'hihat' | 'clap' | 'tom', config.volume);
+    }
+  };
 
   useEffect(() => {
-    if (isPlaying) {
-      const interval1 = cycleDuration / totalBeats1;
-      const interval2 = cycleDuration / totalBeats2;
+    // Clear all intervals
+    intervalRefs.current.forEach((interval) => clearInterval(interval));
+    intervalRefs.current.clear();
 
-      intervalRef1.current = setInterval(() => {
-        setCurrentBeat1((prev) => {
-          const next = (prev + 1) % totalBeats1;
-          playDrumSound(sound1, 0.7);
-          return next;
-        });
-      }, interval1);
+    if (isPlaying && bpm > 0) {
+      rhythms.forEach((config) => {
+        const totalBeats = config.rhythm * config.subdivision;
+        const interval = cycleDuration / totalBeats;
 
-      intervalRef2.current = setInterval(() => {
-        setCurrentBeat2((prev) => {
-          const next = (prev + 1) % totalBeats2;
-          playDrumSound(sound2, 0.7);
-          return next;
-        });
-      }, interval2);
+        const intervalId = setInterval(() => {
+          setRhythms((prev) =>
+            prev.map((r) =>
+              r.id === config.id
+                ? { ...r, currentBeat: (r.currentBeat + 1) % totalBeats }
+                : r
+            )
+          );
+          playSound(config);
+        }, interval);
+
+        intervalRefs.current.set(config.id, intervalId);
+      });
     } else {
-      if (intervalRef1.current) clearInterval(intervalRef1.current);
-      if (intervalRef2.current) clearInterval(intervalRef2.current);
-      setCurrentBeat1(0);
-      setCurrentBeat2(0);
+      setRhythms((prev) => prev.map((r) => ({ ...r, currentBeat: 0 })));
     }
 
     return () => {
-      if (intervalRef1.current) clearInterval(intervalRef1.current);
-      if (intervalRef2.current) clearInterval(intervalRef2.current);
+      intervalRefs.current.forEach((interval) => clearInterval(interval));
+      intervalRefs.current.clear();
     };
-  }, [isPlaying, bpm, rhythm1, rhythm2, cycleDuration, totalBeats1, totalBeats2, sound1, sound2]);
+  }, [isPlaying, bpm, rhythms.map(r => `${r.id}-${r.rhythm}-${r.subdivision}-${r.sound}-${r.volume}-${r.frequency}`).join(','), cycleDuration]);
 
   const togglePlay = () => {
     getAudioContext();
     setIsPlaying(!isPlaying);
+  };
+
+  const addRhythm = () => {
+    const colors = ['amber', 'violet', 'cyan', 'rose', 'emerald', 'orange', 'blue', 'pink', 'green', 'yellow'];
+    const newRhythm: RhythmConfig = {
+      id: nextId.current++,
+      rhythm: 3,
+      subdivision: 1,
+      sound: 'hihat',
+      volume: 0.7,
+      frequency: 660,
+      currentBeat: 0,
+      color: colors[rhythms.length % colors.length],
+    };
+    setRhythms([...rhythms, newRhythm]);
+  };
+
+  const removeRhythm = (id: number) => {
+    if (rhythms.length > 1) {
+      setRhythms(rhythms.filter((r) => r.id !== id));
+    }
+  };
+
+  const updateRhythm = (id: number, updates: Partial<RhythmConfig>) => {
+    setRhythms(rhythms.map((r) => (r.id === id ? { ...r, ...updates } : r)));
   };
 
   const commonPolyrhythms = [
@@ -1494,6 +1553,14 @@ function PolyrhythmTool() {
     { r1: 7, r2: 4, name: '7:4' },
     { r1: 6, r2: 4, name: '6:4 (3:2)' },
   ];
+
+  const loadPreset = (r1: number, r2: number) => {
+    setRhythms([
+      { id: 1, rhythm: r1, subdivision: 1, sound: 'kick', volume: 0.7, frequency: 880, currentBeat: 0, color: 'amber' },
+      { id: 2, rhythm: r2, subdivision: 1, sound: 'snare', volume: 0.7, frequency: 440, currentBeat: 0, color: 'violet' },
+    ]);
+    nextId.current = 3;
+  };
 
   return (
     <Card>
@@ -1508,56 +1575,43 @@ function PolyrhythmTool() {
         {/* Polyrhythm display */}
         <div className="text-center">
           <div className="text-6xl font-bold text-white">
-            <span className="text-amber-400">{rhythm1}</span>
-            <span className="text-zinc-500 mx-2">:</span>
-            <span className="text-violet-400">{rhythm2}</span>
+            {rhythms.map((r, idx) => (
+              <span key={r.id}>
+                <span className={`text-${r.color}-400`}>{r.rhythm}</span>
+                {idx < rhythms.length - 1 && <span className="text-zinc-500 mx-2">:</span>}
+              </span>
+            ))}
           </div>
         </div>
 
         {/* Visual representation */}
         <div className="space-y-3">
-          <div className="flex justify-center gap-1 flex-wrap">
-            {Array.from({ length: totalBeats1 }).map((_, i) => {
-              const isMainBeat = i % subdivision1 === 0;
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    'rounded-full transition-all duration-75 flex items-center justify-center',
-                    isMainBeat ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6 sm:w-7 sm:h-7',
-                    currentBeat1 === i && isPlaying
-                      ? 'bg-amber-500 scale-110'
-                      : isMainBeat
-                      ? 'bg-zinc-800 border-2 border-amber-500/50'
-                      : 'bg-zinc-800 border border-amber-500/20'
-                  )}
-                >
-                  {isMainBeat && <span className="text-xs text-amber-400">{Math.floor(i / subdivision1) + 1}</span>}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-center gap-1 flex-wrap">
-            {Array.from({ length: totalBeats2 }).map((_, i) => {
-              const isMainBeat = i % subdivision2 === 0;
-              return (
-                <div
-                  key={i}
-                  className={cn(
-                    'rounded-full transition-all duration-75 flex items-center justify-center',
-                    isMainBeat ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6 sm:w-7 sm:h-7',
-                    currentBeat2 === i && isPlaying
-                      ? 'bg-violet-500 scale-110'
-                      : isMainBeat
-                      ? 'bg-zinc-800 border-2 border-violet-500/50'
-                      : 'bg-zinc-800 border border-violet-500/20'
-                  )}
-                >
-                  {isMainBeat && <span className="text-xs text-violet-400">{Math.floor(i / subdivision2) + 1}</span>}
-                </div>
-              );
-            })}
-          </div>
+          {rhythms.map((config) => {
+            const totalBeats = config.rhythm * config.subdivision;
+            return (
+              <div key={config.id} className="flex justify-center gap-1 flex-wrap">
+                {Array.from({ length: totalBeats }).map((_, i) => {
+                  const isMainBeat = i % config.subdivision === 0;
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        'rounded-full transition-all duration-75 flex items-center justify-center',
+                        isMainBeat ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6 sm:w-7 sm:h-7',
+                        config.currentBeat === i && isPlaying
+                          ? `bg-${config.color}-500 scale-110`
+                          : isMainBeat
+                          ? `bg-zinc-800 border-2 border-${config.color}-500/50`
+                          : `bg-zinc-800 border border-${config.color}-500/20`
+                      )}
+                    >
+                      {isMainBeat && <span className={`text-xs text-${config.color}-400`}>{Math.floor(i / config.subdivision) + 1}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
 
         {/* Controls */}
@@ -1581,109 +1635,119 @@ function PolyrhythmTool() {
           </Button>
         </div>
 
-        {/* Settings */}
+        {/* Global Settings */}
         <div className="space-y-4">
-          {/* Rhythm 1 Settings */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-amber-400 mb-2 block">Rhythm 1</Label>
-              <Select value={rhythm1.toString()} onValueChange={(v) => setRhythm1(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-amber-400 mb-2 block">Subdivision 1</Label>
-              <Select value={subdivision1.toString()} onValueChange={(v) => setSubdivision1(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Quarter Notes</SelectItem>
-                  <SelectItem value="2">8th Notes</SelectItem>
-                  <SelectItem value="4">16th Notes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-amber-400 mb-2 block">Sound 1</Label>
-              <Select value={sound1} onValueChange={(v: any) => setSound1(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kick">Kick</SelectItem>
-                  <SelectItem value="snare">Snare</SelectItem>
-                  <SelectItem value="hihat">Hi-Hat</SelectItem>
-                  <SelectItem value="clap">Clap</SelectItem>
-                  <SelectItem value="tom">Tom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Rhythm 2 Settings */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-violet-400 mb-2 block">Rhythm 2</Label>
-              <Select value={rhythm2.toString()} onValueChange={(v) => setRhythm2(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2, 3, 4, 5, 6, 7, 8].map((n) => (
-                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-violet-400 mb-2 block">Subdivision 2</Label>
-              <Select value={subdivision2.toString()} onValueChange={(v) => setSubdivision2(parseInt(v))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Quarter Notes</SelectItem>
-                  <SelectItem value="2">8th Notes</SelectItem>
-                  <SelectItem value="4">16th Notes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-violet-400 mb-2 block">Sound 2</Label>
-              <Select value={sound2} onValueChange={(v: any) => setSound2(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="snare">Snare</SelectItem>
-                  <SelectItem value="kick">Kick</SelectItem>
-                  <SelectItem value="hihat">Hi-Hat</SelectItem>
-                  <SelectItem value="clap">Clap</SelectItem>
-                  <SelectItem value="tom">Tom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* BPM */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-zinc-400 mb-2 block">BPM</Label>
+              <Label className="text-zinc-400 mb-2 block">BPM (0-1000)</Label>
               <Input
                 type="number"
                 value={bpm}
-                onChange={(e) => setBpm(Math.max(20, Math.min(200, parseInt(e.target.value) || 60)))}
+                onChange={(e) => setBpm(Math.max(0, Math.min(1000, parseInt(e.target.value) || 0)))}
               />
             </div>
+            <div className="flex items-end">
+              <Button onClick={addRhythm} variant="outline" className="w-full">
+                <span className="mr-2">+</span>Add Rhythm
+              </Button>
+            </div>
           </div>
+        </div>
+
+        {/* Individual Rhythm Settings */}
+        <div className="space-y-4">
+          {rhythms.map((config, idx) => (
+            <div key={config.id} className="border border-zinc-800 rounded-lg p-4 space-y-3">
+              <div className="flex justify-between items-center mb-2">
+                <Label className={`text-${config.color}-400 font-semibold`}>Rhythm {idx + 1}</Label>
+                {rhythms.length > 1 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removeRhythm(config.id)}
+                    className="h-6 w-6 p-0 text-zinc-500 hover:text-red-400"
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className={`text-${config.color}-400 mb-2 block text-xs`}>Beats</Label>
+                  <Select value={config.rhythm.toString()} onValueChange={(v) => updateRhythm(config.id, { rhythm: parseInt(v) })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map((n) => (
+                        <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className={`text-${config.color}-400 mb-2 block text-xs`}>Subdivision</Label>
+                  <Select value={config.subdivision.toString()} onValueChange={(v) => updateRhythm(config.id, { subdivision: parseInt(v) })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Quarter</SelectItem>
+                      <SelectItem value="2">8th</SelectItem>
+                      <SelectItem value="4">16th</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className={`text-${config.color}-400 mb-2 block text-xs`}>Sound</Label>
+                  <Select value={config.sound} onValueChange={(v: any) => updateRhythm(config.id, { sound: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kick">Kick</SelectItem>
+                      <SelectItem value="snare">Snare</SelectItem>
+                      <SelectItem value="hihat">Hi-Hat</SelectItem>
+                      <SelectItem value="clap">Clap</SelectItem>
+                      <SelectItem value="tom">Tom</SelectItem>
+                      <SelectItem value="sine">Sine</SelectItem>
+                      <SelectItem value="sawtooth">Sawtooth</SelectItem>
+                      <SelectItem value="triangle">Triangle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className={`text-${config.color}-400 mb-2 block text-xs`}>Volume</Label>
+                  <Input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={config.volume}
+                    onChange={(e) => updateRhythm(config.id, { volume: parseFloat(e.target.value) })}
+                    className="w-full"
+                  />
+                  <div className="text-xs text-zinc-500 text-center">{Math.round(config.volume * 100)}%</div>
+                </div>
+
+                {['sine', 'sawtooth', 'triangle'].includes(config.sound) && (
+                  <div>
+                    <Label className={`text-${config.color}-400 mb-2 block text-xs`}>Frequency (Hz)</Label>
+                    <Input
+                      type="number"
+                      value={config.frequency}
+                      onChange={(e) => updateRhythm(config.id, { frequency: parseInt(e.target.value) || 440 })}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Common polyrhythms */}
@@ -1694,11 +1758,8 @@ function PolyrhythmTool() {
               <Button
                 key={`${p.r1}:${p.r2}`}
                 size="sm"
-                variant={rhythm1 === p.r1 && rhythm2 === p.r2 ? 'default' : 'outline'}
-                onClick={() => {
-                  setRhythm1(p.r1);
-                  setRhythm2(p.r2);
-                }}
+                variant="outline"
+                onClick={() => loadPreset(p.r1, p.r2)}
               >
                 {p.name}
               </Button>
