@@ -104,7 +104,10 @@ export default function EpicsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(epic),
       });
-      if (!res.ok) throw new Error('Failed to create epic');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to create epic');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -121,8 +124,8 @@ export default function EpicsPage() {
         targetDate: '',
       });
     },
-    onError: () => {
-      toast.error('Failed to create epic');
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 
@@ -133,7 +136,10 @@ export default function EpicsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates),
       });
-      if (!res.ok) throw new Error('Failed to update epic');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update epic');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -142,8 +148,8 @@ export default function EpicsPage() {
       setIsEditDialogOpen(false);
       setSelectedEpic(null);
     },
-    onError: () => {
-      toast.error('Failed to update epic');
+    onError: (error: Error) => {
+      toast.error(error.message);
     },
   });
 
@@ -205,7 +211,7 @@ export default function EpicsPage() {
               Create Epic
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Epic</DialogTitle>
               <DialogDescription>
@@ -232,7 +238,7 @@ export default function EpicsPage() {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="project">Project</Label>
                   <Select
@@ -271,7 +277,7 @@ export default function EpicsPage() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="startDate">Start Date</Label>
                   <Input
@@ -293,7 +299,7 @@ export default function EpicsPage() {
               </div>
               <div>
                 <Label>Color</Label>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   {epicColors.map((color) => (
                     <button
                       key={color}
@@ -311,8 +317,8 @@ export default function EpicsPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateEpic} disabled={isCreating}>
-                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleCreateEpic} disabled={createEpicMutation.isPending}>
+                {createEpicMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Epic
               </Button>
             </DialogFooter>
@@ -438,7 +444,7 @@ export default function EpicsPage() {
 
       {/* Edit Epic Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Epic</DialogTitle>
             <DialogDescription>
@@ -464,7 +470,7 @@ export default function EpicsPage() {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-status">Status</Label>
                   <Select
@@ -495,7 +501,7 @@ export default function EpicsPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-startDate">Start Date</Label>
                   <Input
@@ -517,7 +523,7 @@ export default function EpicsPage() {
               </div>
               <div>
                 <Label>Color</Label>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   {epicColors.map((color) => (
                     <button
                       key={color}
@@ -536,15 +542,17 @@ export default function EpicsPage() {
             <Button
               variant="destructive"
               onClick={() => selectedEpic && deleteEpicMutation.mutate(selectedEpic.id)}
+              disabled={deleteEpicMutation.isPending}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              {deleteEpicMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               Delete Epic
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleUpdateEpic}>
+              <Button onClick={handleUpdateEpic} disabled={updateEpicMutation.isPending}>
+                {updateEpicMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </div>
