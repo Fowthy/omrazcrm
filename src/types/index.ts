@@ -15,19 +15,35 @@ export interface User {
 // Project types
 export interface Project {
   id: string;
+  key: string; // e.g., ALB, EP, TOUR
   name: string;
   description: string | null;
-  type: 'album' | 'ep' | 'single' | 'demo' | 'other';
+  type: 'album' | 'ep' | 'single' | 'demo' | 'music_video' | 'tour' | 'band_management' | 'marketing_campaign' | 'merchandise';
   status: 'idea' | 'writing' | 'recording' | 'mixing' | 'mastering' | 'released' | 'archived';
   coverImage: string | null;
+  startDate: Date | null;
   releaseDate: Date | null;
+  completedDate: Date | null;
+  budget: number | null;
+  spentBudget: number;
+  currency: string;
+  progress: number; // 0-100
+  defaultAssigneeId: string | null;
+  leadId: string | null;
+  boardConfigId: string | null;
   createdAt: Date;
   updatedAt: Date;
   createdById: string;
   createdBy?: User;
+  lead?: User;
+  defaultAssignee?: User;
   songs?: Song[];
   files?: FileItem[];
   tags?: string[];
+  members?: ProjectMember[];
+  epics?: Epic[];
+  sprints?: Sprint[];
+  boardConfig?: BoardConfig;
 }
 
 // Song types
@@ -211,25 +227,119 @@ export interface RehearsalAttendee {
   user?: User;
 }
 
-// Task types
-export interface Task {
+// Epic types - Large bodies of work grouping related tasks
+export interface Epic {
   id: string;
+  key: string; // e.g., ALB-1, TOUR-2
   title: string;
   description: string | null;
-  status: 'todo' | 'in_progress' | 'review' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate: Date | null;
+  status: 'planning' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
+  color: string;
+  startDate: Date | null;
+  targetDate: Date | null;
+  completedDate: Date | null;
+  progress: number; // 0-100
+  projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
   createdById: string;
-  assigneeId: string | null;
+  createdBy?: User;
+  project?: Project;
+  tasks?: Task[];
+}
+
+// Sprint types - Time-boxed iterations
+export interface Sprint {
+  id: string;
+  name: string;
+  goal: string | null;
+  status: 'planning' | 'active' | 'completed';
+  startDate: Date;
+  endDate: Date;
+  projectId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string;
+  createdBy?: User;
+  project?: Project;
+  tasks?: Task[];
+}
+
+// Label types - Flexible tagging
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
+  description: string | null;
+  projectId: string | null; // null = global
+  createdAt: Date;
+  project?: Project;
+}
+
+// Task types (Enhanced)
+export type TaskType =
+  | 'story'
+  | 'task'
+  | 'bug'
+  | 'recording'
+  | 'mixing'
+  | 'mastering'
+  | 'writing'
+  | 'marketing'
+  | 'video'
+  | 'live_show';
+
+export type TaskStatus =
+  | 'todo'
+  | 'in_progress'
+  | 'review'
+  | 'done'
+  | 'blocked'
+  | 'backlog';
+
+export interface Task {
+  id: string;
+  key: string; // e.g., TASK-123
+  title: string;
+  description: string | null;
+  type: TaskType;
+  status: TaskStatus;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  storyPoints: number | null; // 1, 2, 3, 5, 8, 13, 21
+  timeEstimate: number | null; // Minutes
+  timeSpent: number; // Minutes
+  dueDate: Date | null;
+  startDate: Date | null;
+  completedDate: Date | null;
+  // Relationships
+  epicId: string | null;
+  sprintId: string | null;
   projectId: string | null;
   songId: string | null;
+  parentTaskId: string | null; // For subtasks
+  reporterId: string; // Who created it
+  assigneeId: string | null; // Who's working on it
+  position: number; // For ordering
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string;
+  // Relations
   createdBy?: User;
+  reporter?: User;
   assignee?: User;
   project?: Project;
   song?: Song;
-  subtasks?: Subtask[];
+  epic?: Epic;
+  sprint?: Sprint;
+  parentTask?: Task;
+  subtasks?: Task[]; // Child tasks
+  labels?: Label[];
+  dependencies?: TaskDependency[];
+  blockedBy?: TaskDependency[];
+  timeLogs?: TimeLog[];
+  comments?: TaskComment[];
+  attachments?: TaskAttachment[];
+  history?: TaskHistory[];
 }
 
 export interface Subtask {
@@ -238,6 +348,137 @@ export interface Subtask {
   title: string;
   completed: boolean;
   createdAt: Date;
+}
+
+// Task Dependency types
+export interface TaskDependency {
+  id: string;
+  taskId: string; // This task
+  dependsOnTaskId: string; // Depends on this task
+  type: 'blocks' | 'is_blocked_by' | 'relates_to';
+  createdAt: Date;
+  task?: Task;
+  dependsOnTask?: Task;
+}
+
+// Time Log types
+export interface TimeLog {
+  id: string;
+  taskId: string;
+  userId: string;
+  timeSpent: number; // Minutes
+  description: string | null;
+  loggedAt: Date;
+  createdAt: Date;
+  task?: Task;
+  user?: User;
+}
+
+// Project Member types
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: 'project_lead' | 'developer' | 'designer' | 'qa' | 'musician' | 'engineer' | 'producer';
+  joinedAt: Date;
+  project?: Project;
+  user?: User;
+}
+
+// Saved Filter types
+export interface SavedFilter {
+  id: string;
+  name: string;
+  description: string | null;
+  filterConfig: FilterConfig;
+  isPublic: boolean;
+  projectId: string | null;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: User;
+  project?: Project;
+}
+
+export interface FilterConfig {
+  status?: TaskStatus[];
+  priority?: ('low' | 'medium' | 'high' | 'urgent')[];
+  type?: TaskType[];
+  assignee?: string[];
+  epic?: string[];
+  sprint?: string[];
+  labels?: string[];
+  dueDate?: {
+    from?: Date;
+    to?: Date;
+  };
+  searchQuery?: string;
+}
+
+// Board Config types
+export interface BoardConfig {
+  id: string;
+  name: string;
+  description: string | null;
+  type: 'kanban' | 'scrum' | 'timeline' | 'calendar';
+  columns: BoardColumn[];
+  swimlanes: SwimlaneConfig | null;
+  projectId: string | null;
+  isDefault: boolean;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy?: User;
+  project?: Project;
+}
+
+export interface BoardColumn {
+  id: string;
+  name: string;
+  status: TaskStatus;
+  color: string;
+  limit?: number; // WIP limit
+}
+
+export interface SwimlaneConfig {
+  groupBy: 'assignee' | 'priority' | 'epic' | 'type';
+}
+
+// Task Comment types
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  content: string;
+  userId: string;
+  parentId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  task?: Task;
+  user?: User;
+  replies?: TaskComment[];
+}
+
+// Task Attachment types
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  fileId: string;
+  createdAt: Date;
+  task?: Task;
+  file?: FileItem;
+}
+
+// Task History types
+export interface TaskHistory {
+  id: string;
+  taskId: string;
+  userId: string;
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: Date;
+  task?: Task;
+  user?: User;
 }
 
 // Finance types
