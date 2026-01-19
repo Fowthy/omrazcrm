@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, description, type, status, releaseDate } = body;
+    const { name, key, description, type, status, releaseDate, startDate, budget, currency } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -86,20 +86,34 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!key) {
+      return NextResponse.json(
+        { error: 'Project key is required' },
+        { status: 400 }
+      );
+    }
+
     const newProject = await db
       .insert(projects)
       .values({
         id: nanoid(),
+        key: key.toUpperCase(),
         name,
         description: description || null,
         type: type || 'album',
         status: status || 'idea',
+        startDate: startDate ? new Date(startDate) : null,
         releaseDate: releaseDate ? new Date(releaseDate) : null,
+        budget: budget || null,
+        spentBudget: 0,
+        currency: currency || 'USD',
+        progress: 0,
         createdById: session.user.id,
       })
       .returning();
 
-    return NextResponse.json(newProject[0], { status: 201 });
+    const result = Array.isArray(newProject) ? newProject[0] : newProject;
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
     return NextResponse.json(

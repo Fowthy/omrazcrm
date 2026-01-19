@@ -32,6 +32,10 @@ import {
   Sparkles,
   Piano,
   AudioLines,
+  Target,
+  Zap,
+  ListTodo,
+  Map,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -53,8 +57,12 @@ const mainNavItems = [
 ];
 
 const workNavItems = [
+  { href: '/tasks', label: 'Tasks Board', icon: CheckSquare },
+  { href: '/backlog', label: 'Backlog', icon: ListTodo },
+  { href: '/epics', label: 'Epics', icon: Target },
+  { href: '/sprints', label: 'Sprints', icon: Zap },
+  { href: '/roadmap', label: 'Roadmap', icon: Map },
   { href: '/rehearsals', label: 'Rehearsals', icon: CalendarDays },
-  { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/tempo-maps', label: 'Tempo Maps', icon: Timer },
   { href: '/visualizations', label: 'Visualizations', icon: Sparkles },

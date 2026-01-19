@@ -165,10 +165,10 @@ export const songStatuses = [
 ];
 
 export const taskPriorities = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
+  { value: 'low', label: 'Low', color: 'bg-gray-500' },
+  { value: 'medium', label: 'Medium', color: 'bg-blue-500' },
+  { value: 'high', label: 'High', color: 'bg-orange-500' },
+  { value: 'urgent', label: 'Urgent', color: 'bg-red-500' },
 ];
 
 export const expenseCategories = [

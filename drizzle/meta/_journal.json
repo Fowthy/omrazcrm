@@ -15,6 +15,13 @@
       "when": 1768313294258,
       "tag": "0001_high_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1768844786443,
+      "tag": "0002_grey_pixie",
+      "breakpoints": true
     }
   ]
 }

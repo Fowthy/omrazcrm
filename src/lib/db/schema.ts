@@ -29,14 +29,43 @@ export const sessions = sqliteTable('sessions', {
 // PROJECTS & SONGS
 // ============================================
 
-export const projects = sqliteTable('projects', {
+// Board Configurations - Custom board views (defined here to avoid circular reference)
+export const boardConfigs = sqliteTable('board_configs', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
-  type: text('type').default('album').notNull(), // album, ep, single, demo, other
+  type: text('type').default('kanban').notNull(), // kanban, scrum, timeline, calendar
+  columns: text('columns').notNull(), // JSON: [{ id, name, status, color, limit }]
+  swimlanes: text('swimlanes'), // JSON: { groupBy: 'assignee' | 'priority' | 'epic' }
+  projectId: text('project_id'), // Reference to projects - added later to avoid circular dependency
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(), // e.g., ALB, EP, TOUR, VIDEO
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').default('album').notNull(), // album, ep, single, demo, music_video, tour, band_management, marketing_campaign, merchandise
   status: text('status').default('idea').notNull(), // idea, writing, recording, mixing, mastering, released, archived
   coverImage: text('cover_image'),
+  // Timeline fields
+  startDate: integer('start_date', { mode: 'timestamp' }),
   releaseDate: integer('release_date', { mode: 'timestamp' }),
+  completedDate: integer('completed_date', { mode: 'timestamp' }),
+  // Project management fields
+  budget: real('budget'),
+  spentBudget: real('spent_budget').default(0),
+  currency: text('currency').default('USD'),
+  progress: integer('progress').default(0), // 0-100
+  defaultAssigneeId: text('default_assignee_id').references(() => users.id),
+  leadId: text('lead_id').references(() => users.id), // Project lead
+  // Settings
+  boardConfigId: text('board_config_id').references(() => boardConfigs.id),
+  // Metadata
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
@@ -245,29 +274,167 @@ export const rehearsalNotes = sqliteTable('rehearsal_notes', {
 });
 
 // ============================================
-// TASKS (KANBAN)
+// PROJECT MANAGEMENT (JIRA-LIKE)
 // ============================================
 
-export const tasks = sqliteTable('tasks', {
+// Epics - Large bodies of work that group related tasks
+export const epics = sqliteTable('epics', {
   id: text('id').primaryKey(),
+  key: text('key').notNull().unique(), // e.g., ALB-1, TOUR-2
   title: text('title').notNull(),
   description: text('description'),
-  status: text('status').default('todo').notNull(), // todo, in_progress, review, done
-  priority: text('priority').default('medium').notNull(), // low, medium, high, urgent
-  dueDate: integer('due_date', { mode: 'timestamp' }),
+  status: text('status').default('planning').notNull(), // planning, in_progress, completed, on_hold, cancelled
+  color: text('color').default('#8B5CF6'),
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  targetDate: integer('target_date', { mode: 'timestamp' }),
+  completedDate: integer('completed_date', { mode: 'timestamp' }),
+  progress: integer('progress').default(0), // 0-100
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
-  assigneeId: text('assignee_id').references(() => users.id),
-  projectId: text('project_id').references(() => projects.id),
-  songId: text('song_id').references(() => songs.id),
 });
 
+// Sprints - Time-boxed iterations for completing work
+export const sprints = sqliteTable('sprints', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(), // e.g., "Album Recording Sprint 1"
+  goal: text('goal'), // Sprint objective
+  status: text('status').default('planning').notNull(), // planning, active, completed
+  startDate: integer('start_date', { mode: 'timestamp' }).notNull(),
+  endDate: integer('end_date', { mode: 'timestamp' }).notNull(),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+});
+
+// Enhanced Tasks with Jira-like features
+export const tasks = sqliteTable('tasks', {
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(), // e.g., TASK-123
+  title: text('title').notNull(),
+  description: text('description'),
+  type: text('type').default('task').notNull(), // story, task, bug, recording, mixing, mastering, writing, marketing, video, live_show
+  status: text('status').default('todo').notNull(), // todo, in_progress, review, done, blocked, backlog
+  priority: text('priority').default('medium').notNull(), // low, medium, high, urgent
+  storyPoints: integer('story_points'), // Estimation (1, 2, 3, 5, 8, 13, 21)
+  timeEstimate: integer('time_estimate'), // Estimated time in minutes
+  timeSpent: integer('time_spent').default(0), // Actual time spent in minutes
+  dueDate: integer('due_date', { mode: 'timestamp' }),
+  startDate: integer('start_date', { mode: 'timestamp' }),
+  completedDate: integer('completed_date', { mode: 'timestamp' }),
+  // Relationships
+  epicId: text('epic_id').references(() => epics.id, { onDelete: 'set null' }),
+  sprintId: text('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
+  parentTaskId: text('parent_task_id'), // For subtasks - self-reference to tasks.id (handled at app level to avoid circular ref)
+  // Assignment
+  reporterId: text('reporter_id').notNull().references(() => users.id), // Who created it
+  assigneeId: text('assignee_id').references(() => users.id), // Who's working on it
+  // Position for ordering in lists/boards
+  position: integer('position').default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+});
+
+// Labels - Flexible tagging system for tasks
+export const labels = sqliteTable('labels', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull().default('#gray'),
+  description: text('description'),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global label
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Task Labels - Many-to-many relationship
+export const taskLabels = sqliteTable('task_labels', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  labelId: text('label_id').notNull().references(() => labels.id, { onDelete: 'cascade' }),
+});
+
+// Task Dependencies - Block/Depend relationships
+export const taskDependencies = sqliteTable('task_dependencies', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }), // This task
+  dependsOnTaskId: text('depends_on_task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }), // Depends on this task
+  type: text('type').default('blocks').notNull(), // blocks, is_blocked_by, relates_to
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Subtasks (kept for backward compatibility, but can be replaced by parentTaskId)
 export const subtasks = sqliteTable('subtasks', {
   id: text('id').primaryKey(),
   taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   completed: integer('completed', { mode: 'boolean' }).default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Time Logs - Track time spent on tasks
+export const timeLogs = sqliteTable('time_logs', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id),
+  timeSpent: integer('time_spent').notNull(), // Minutes
+  description: text('description'),
+  loggedAt: integer('logged_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Project Members - Team members with roles
+export const projectMembers = sqliteTable('project_members', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(), // project_lead, developer, designer, qa, musician, engineer, producer
+  joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Saved Filters - Save complex filter combinations
+export const savedFilters = sqliteTable('saved_filters', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  filterConfig: text('filter_config').notNull(), // JSON: { status: [], priority: [], assignee: [], etc. }
+  isPublic: integer('is_public', { mode: 'boolean' }).default(false), // Shared with team or personal
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global
+  createdById: text('created_by_id').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Task Comments (enhanced from general comments)
+export const taskComments = sqliteTable('task_comments', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  userId: text('user_id').notNull().references(() => users.id),
+  parentId: text('parent_id'), // For threaded comments
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Task Attachments
+export const taskAttachments = sqliteTable('task_attachments', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Task History - Audit log for changes
+export const taskHistory = sqliteTable('task_history', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id),
+  field: text('field').notNull(), // status, assignee, priority, etc.
+  oldValue: text('old_value'),
+  newValue: text('new_value'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
