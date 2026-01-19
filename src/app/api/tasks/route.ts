@@ -21,19 +21,23 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const assigneeId = searchParams.get('assigneeId');
 
-    let conditions = [];
+    const conditions = [];
     if (projectId) conditions.push(eq(tasks.projectId, projectId));
     if (epicId) conditions.push(eq(tasks.epicId, epicId));
     if (sprintId) conditions.push(eq(tasks.sprintId, sprintId));
     if (status) conditions.push(eq(tasks.status, status));
     if (assigneeId) conditions.push(eq(tasks.assigneeId, assigneeId));
 
-    let query = db.select().from(tasks);
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const allTasks = await query.orderBy(desc(tasks.updatedAt));
+    const allTasks = conditions.length > 0
+      ? await db
+          .select()
+          .from(tasks)
+          .where(and(...conditions))
+          .orderBy(desc(tasks.updatedAt))
+      : await db
+          .select()
+          .from(tasks)
+          .orderBy(desc(tasks.updatedAt));
 
     const tasksWithRelations = await Promise.all(
       allTasks.map(async (task) => {
@@ -199,18 +203,20 @@ export async function POST(request: Request) {
       })
       .returning();
 
+    const task = Array.isArray(newTask) ? newTask[0] : newTask;
+
     // Add labels if provided
-    if (labelIds && labelIds.length > 0) {
+    if (labelIds && labelIds.length > 0 && task) {
       await db.insert(taskLabels).values(
         labelIds.map((labelId: string) => ({
           id: nanoid(),
-          taskId: newTask[0].id,
+          taskId: task.id,
           labelId,
         }))
       );
     }
 
-    return NextResponse.json(newTask[0], { status: 201 });
+    return NextResponse.json(task, { status: 201 });
   } catch (error) {
     console.error('Error creating task:', error);
     return NextResponse.json(
@@ -247,7 +253,8 @@ export async function PATCH(request: Request) {
       .where(eq(tasks.id, id))
       .returning();
 
-    return NextResponse.json(updatedTask[0]);
+    const result = Array.isArray(updatedTask) ? updatedTask[0] : updatedTask;
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error updating task:', error);
     return NextResponse.json(

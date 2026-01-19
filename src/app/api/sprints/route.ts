@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status');
 
-    let conditions = [];
+    const conditions = [];
     if (projectId) {
       conditions.push(eq(sprints.projectId, projectId));
     }
@@ -26,12 +26,16 @@ export async function GET(request: Request) {
       conditions.push(eq(sprints.status, status));
     }
 
-    let query = db.select().from(sprints);
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const allSprints = await query.orderBy(desc(sprints.startDate));
+    const allSprints = conditions.length > 0
+      ? await db
+          .select()
+          .from(sprints)
+          .where(and(...conditions))
+          .orderBy(desc(sprints.startDate))
+      : await db
+          .select()
+          .from(sprints)
+          .orderBy(desc(sprints.startDate));
 
     const sprintsWithRelations = await Promise.all(
       allSprints.map(async (sprint) => {

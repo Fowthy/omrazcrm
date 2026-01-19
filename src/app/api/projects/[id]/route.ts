@@ -75,21 +75,24 @@ export async function PATCH(
     }
 
     // Update project
+    const updateData = {
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(type !== undefined && { type }),
+      ...(status !== undefined && { status }),
+      ...(releaseDate !== undefined && { releaseDate: releaseDate ? new Date(releaseDate) : null }),
+      ...(coverImage !== undefined && { coverImage }),
+      updatedAt: new Date(),
+    };
+
     const updated = await db
       .update(projects)
-      .set({
-        ...(name !== undefined && { name }),
-        ...(description !== undefined && { description }),
-        ...(type !== undefined && { type }),
-        ...(status !== undefined && { status }),
-        ...(releaseDate !== undefined && { releaseDate: releaseDate ? new Date(releaseDate) : null }),
-        ...(coverImage !== undefined && { coverImage }),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(projects.id, id))
       .returning();
 
-    return NextResponse.json(updated[0]);
+    const result = Array.isArray(updated) ? updated[0] : updated;
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error updating project:', error);
     return NextResponse.json(

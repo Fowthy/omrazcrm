@@ -190,16 +190,20 @@ export async function PATCH(
     }
 
     // Track field changes for history
+    const task = currentTask[0] as any;
     const fieldsToTrack = ['status', 'assigneeId', 'priority', 'epicId', 'sprintId'];
+
     for (const field of fieldsToTrack) {
-      if (updates[field] !== undefined && updates[field] !== currentTask[0][field as keyof typeof currentTask[0]]) {
+      const oldVal = task[field];
+      const newVal = updates[field as keyof typeof updates];
+      if (newVal !== undefined && newVal !== oldVal) {
         await db.insert(taskHistory).values({
           id: nanoid(),
           taskId: id,
           userId: session.user.id,
-          field,
-          oldValue: String(currentTask[0][field as keyof typeof currentTask[0]] || ''),
-          newValue: String(updates[field] || ''),
+          field: field,
+          oldValue: String(oldVal ?? ''),
+          newValue: String(newVal ?? ''),
         });
       }
     }
@@ -240,7 +244,8 @@ export async function PATCH(
       }
     }
 
-    return NextResponse.json(updatedTask[0]);
+    const result = Array.isArray(updatedTask) ? updatedTask[0] : updatedTask;
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error updating task:', error);
     return NextResponse.json(
@@ -278,7 +283,7 @@ export async function DELETE(
       .where(eq(tasks.id, id))
       .returning();
 
-    if (deletedTask.length === 0) {
+    if (!deletedTask || (Array.isArray(deletedTask) && deletedTask.length === 0)) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 

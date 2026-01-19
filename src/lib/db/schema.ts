@@ -29,6 +29,21 @@ export const sessions = sqliteTable('sessions', {
 // PROJECTS & SONGS
 // ============================================
 
+// Board Configurations - Custom board views (defined here to avoid circular reference)
+export const boardConfigs = sqliteTable('board_configs', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  type: text('type').default('kanban').notNull(), // kanban, scrum, timeline, calendar
+  columns: text('columns').notNull(), // JSON: [{ id, name, status, color, limit }]
+  swimlanes: text('swimlanes'), // JSON: { groupBy: 'assignee' | 'priority' | 'epic' }
+  projectId: text('project_id'), // Reference to projects - added later to avoid circular dependency
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdById: text('created_by_id').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   key: text('key').notNull().unique(), // e.g., ALB, EP, TOUR, VIDEO
@@ -294,23 +309,6 @@ export const sprints = sqliteTable('sprints', {
   createdById: text('created_by_id').notNull().references(() => users.id),
 });
 
-// Labels - Flexible tagging system for tasks
-export const labels = sqliteTable('labels', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  color: text('color').notNull().default('#gray'),
-  description: text('description'),
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global label
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Task Labels - Many-to-many relationship
-export const taskLabels = sqliteTable('task_labels', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  labelId: text('label_id').notNull().references(() => labels.id, { onDelete: 'cascade' }),
-});
-
 // Enhanced Tasks with Jira-like features
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
@@ -331,7 +329,7 @@ export const tasks = sqliteTable('tasks', {
   sprintId: text('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
   projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
-  parentTaskId: text('parent_task_id').references(() => tasks.id, { onDelete: 'cascade' }), // For subtasks
+  parentTaskId: text('parent_task_id'), // For subtasks - self-reference to tasks.id (handled at app level to avoid circular ref)
   // Assignment
   reporterId: text('reporter_id').notNull().references(() => users.id), // Who created it
   assigneeId: text('assignee_id').references(() => users.id), // Who's working on it
@@ -340,6 +338,23 @@ export const tasks = sqliteTable('tasks', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
+});
+
+// Labels - Flexible tagging system for tasks
+export const labels = sqliteTable('labels', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  color: text('color').notNull().default('#gray'),
+  description: text('description'),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global label
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Task Labels - Many-to-many relationship
+export const taskLabels = sqliteTable('task_labels', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  labelId: text('label_id').notNull().references(() => labels.id, { onDelete: 'cascade' }),
 });
 
 // Task Dependencies - Block/Depend relationships
@@ -388,21 +403,6 @@ export const savedFilters = sqliteTable('saved_filters', {
   filterConfig: text('filter_config').notNull(), // JSON: { status: [], priority: [], assignee: [], etc. }
   isPublic: integer('is_public', { mode: 'boolean' }).default(false), // Shared with team or personal
   projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global
-  createdById: text('created_by_id').notNull().references(() => users.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Board Configurations - Custom board views
-export const boardConfigs = sqliteTable('board_configs', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  type: text('type').default('kanban').notNull(), // kanban, scrum, timeline, calendar
-  columns: text('columns').notNull(), // JSON: [{ id, name, status, color, limit }]
-  swimlanes: text('swimlanes'), // JSON: { groupBy: 'assignee' | 'priority' | 'epic' }
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
-  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
   createdById: text('created_by_id').notNull().references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),

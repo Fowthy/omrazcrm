@@ -17,13 +17,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
 
-    let query = db.select().from(epics);
-
-    if (projectId) {
-      query = query.where(eq(epics.projectId, projectId));
-    }
-
-    const allEpics = await query.orderBy(desc(epics.updatedAt));
+    const allEpics = projectId
+      ? await db
+          .select()
+          .from(epics)
+          .where(eq(epics.projectId, projectId))
+          .orderBy(desc(epics.updatedAt))
+      : await db
+          .select()
+          .from(epics)
+          .orderBy(desc(epics.updatedAt));
 
     const epicsWithRelations = await Promise.all(
       allEpics.map(async (epic) => {
