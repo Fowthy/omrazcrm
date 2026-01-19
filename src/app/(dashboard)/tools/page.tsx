@@ -1437,28 +1437,34 @@ function PolyrhythmTool() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat1, setCurrentBeat1] = useState(0);
   const [currentBeat2, setCurrentBeat2] = useState(0);
+  const [subdivision1, setSubdivision1] = useState(1); // 1 = quarter, 2 = 8th, 4 = 16th
+  const [subdivision2, setSubdivision2] = useState(1);
+  const [sound1, setSound1] = useState<'kick' | 'snare' | 'hihat' | 'clap' | 'tom'>('kick');
+  const [sound2, setSound2] = useState<'kick' | 'snare' | 'hihat' | 'clap' | 'tom'>('snare');
   const intervalRef1 = useRef<NodeJS.Timeout | null>(null);
   const intervalRef2 = useRef<NodeJS.Timeout | null>(null);
 
   const cycleDuration = (60 / bpm) * 1000 * rhythm2; // Full cycle in ms
+  const totalBeats1 = rhythm1 * subdivision1;
+  const totalBeats2 = rhythm2 * subdivision2;
 
   useEffect(() => {
     if (isPlaying) {
-      const interval1 = cycleDuration / rhythm1;
-      const interval2 = cycleDuration / rhythm2;
+      const interval1 = cycleDuration / totalBeats1;
+      const interval2 = cycleDuration / totalBeats2;
 
       intervalRef1.current = setInterval(() => {
         setCurrentBeat1((prev) => {
-          const next = (prev + 1) % rhythm1;
-          playClick(880, 0.05, 0.6); // Higher pitch
+          const next = (prev + 1) % totalBeats1;
+          playDrumSound(sound1, 0.7);
           return next;
         });
       }, interval1);
 
       intervalRef2.current = setInterval(() => {
         setCurrentBeat2((prev) => {
-          const next = (prev + 1) % rhythm2;
-          playClick(440, 0.08, 0.7); // Lower pitch
+          const next = (prev + 1) % totalBeats2;
+          playDrumSound(sound2, 0.7);
           return next;
         });
       }, interval2);
@@ -1473,7 +1479,7 @@ function PolyrhythmTool() {
       if (intervalRef1.current) clearInterval(intervalRef1.current);
       if (intervalRef2.current) clearInterval(intervalRef2.current);
     };
-  }, [isPlaying, bpm, rhythm1, rhythm2, cycleDuration]);
+  }, [isPlaying, bpm, rhythm1, rhythm2, cycleDuration, totalBeats1, totalBeats2, sound1, sound2]);
 
   const togglePlay = () => {
     getAudioContext();
@@ -1510,35 +1516,47 @@ function PolyrhythmTool() {
 
         {/* Visual representation */}
         <div className="space-y-3">
-          <div className="flex justify-center gap-1">
-            {Array.from({ length: rhythm1 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-75 flex items-center justify-center',
-                  currentBeat1 === i && isPlaying
-                    ? 'bg-amber-500 scale-110'
-                    : 'bg-zinc-800 border border-amber-500/30'
-                )}
-              >
-                <span className="text-xs text-amber-400">{i + 1}</span>
-              </div>
-            ))}
+          <div className="flex justify-center gap-1 flex-wrap">
+            {Array.from({ length: totalBeats1 }).map((_, i) => {
+              const isMainBeat = i % subdivision1 === 0;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'rounded-full transition-all duration-75 flex items-center justify-center',
+                    isMainBeat ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6 sm:w-7 sm:h-7',
+                    currentBeat1 === i && isPlaying
+                      ? 'bg-amber-500 scale-110'
+                      : isMainBeat
+                      ? 'bg-zinc-800 border-2 border-amber-500/50'
+                      : 'bg-zinc-800 border border-amber-500/20'
+                  )}
+                >
+                  {isMainBeat && <span className="text-xs text-amber-400">{Math.floor(i / subdivision1) + 1}</span>}
+                </div>
+              );
+            })}
           </div>
-          <div className="flex justify-center gap-1">
-            {Array.from({ length: rhythm2 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-all duration-75 flex items-center justify-center',
-                  currentBeat2 === i && isPlaying
-                    ? 'bg-violet-500 scale-110'
-                    : 'bg-zinc-800 border border-violet-500/30'
-                )}
-              >
-                <span className="text-xs text-violet-400">{i + 1}</span>
-              </div>
-            ))}
+          <div className="flex justify-center gap-1 flex-wrap">
+            {Array.from({ length: totalBeats2 }).map((_, i) => {
+              const isMainBeat = i % subdivision2 === 0;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    'rounded-full transition-all duration-75 flex items-center justify-center',
+                    isMainBeat ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6 sm:w-7 sm:h-7',
+                    currentBeat2 === i && isPlaying
+                      ? 'bg-violet-500 scale-110'
+                      : isMainBeat
+                      ? 'bg-zinc-800 border-2 border-violet-500/50'
+                      : 'bg-zinc-800 border border-violet-500/20'
+                  )}
+                >
+                  {isMainBeat && <span className="text-xs text-violet-400">{Math.floor(i / subdivision2) + 1}</span>}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1564,40 +1582,107 @@ function PolyrhythmTool() {
         </div>
 
         {/* Settings */}
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <Label className="text-amber-400 mb-2 block">Rhythm 1</Label>
-            <Select value={rhythm1.toString()} onValueChange={(v) => setRhythm1(parseInt(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-4">
+          {/* Rhythm 1 Settings */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-amber-400 mb-2 block">Rhythm 1</Label>
+              <Select value={rhythm1.toString()} onValueChange={(v) => setRhythm1(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-amber-400 mb-2 block">Subdivision 1</Label>
+              <Select value={subdivision1.toString()} onValueChange={(v) => setSubdivision1(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Quarter Notes</SelectItem>
+                  <SelectItem value="2">8th Notes</SelectItem>
+                  <SelectItem value="4">16th Notes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-amber-400 mb-2 block">Sound 1</Label>
+              <Select value={sound1} onValueChange={(v: any) => setSound1(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kick">Kick</SelectItem>
+                  <SelectItem value="snare">Snare</SelectItem>
+                  <SelectItem value="hihat">Hi-Hat</SelectItem>
+                  <SelectItem value="clap">Clap</SelectItem>
+                  <SelectItem value="tom">Tom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label className="text-violet-400 mb-2 block">Rhythm 2</Label>
-            <Select value={rhythm2.toString()} onValueChange={(v) => setRhythm2(parseInt(v))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          {/* Rhythm 2 Settings */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-violet-400 mb-2 block">Rhythm 2</Label>
+              <Select value={rhythm2.toString()} onValueChange={(v) => setRhythm2(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                    <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-violet-400 mb-2 block">Subdivision 2</Label>
+              <Select value={subdivision2.toString()} onValueChange={(v) => setSubdivision2(parseInt(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Quarter Notes</SelectItem>
+                  <SelectItem value="2">8th Notes</SelectItem>
+                  <SelectItem value="4">16th Notes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-violet-400 mb-2 block">Sound 2</Label>
+              <Select value={sound2} onValueChange={(v: any) => setSound2(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="snare">Snare</SelectItem>
+                  <SelectItem value="kick">Kick</SelectItem>
+                  <SelectItem value="hihat">Hi-Hat</SelectItem>
+                  <SelectItem value="clap">Clap</SelectItem>
+                  <SelectItem value="tom">Tom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div>
-            <Label className="text-zinc-400 mb-2 block">BPM</Label>
-            <Input
-              type="number"
-              value={bpm}
-              onChange={(e) => setBpm(Math.max(20, Math.min(200, parseInt(e.target.value) || 60)))}
-            />
+
+          {/* BPM */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label className="text-zinc-400 mb-2 block">BPM</Label>
+              <Input
+                type="number"
+                value={bpm}
+                onChange={(e) => setBpm(Math.max(20, Math.min(200, parseInt(e.target.value) || 60)))}
+              />
+            </div>
           </div>
         </div>
 
