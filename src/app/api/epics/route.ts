@@ -90,8 +90,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Convert empty string to null for projectId
-    const normalizedProjectId = projectId && projectId.trim() !== '' ? projectId : null;
+    // Convert empty string or 'none' to null for projectId
+    const normalizedProjectId = projectId && projectId.trim() !== '' && projectId !== 'none' ? projectId : null;
 
     // Generate unique key for epic
     const projectPrefix = normalizedProjectId

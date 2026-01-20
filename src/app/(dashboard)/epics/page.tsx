@@ -254,7 +254,7 @@ export default function EpicsPage() {
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {projectsList?.map((project: any) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
