@@ -168,8 +168,11 @@ export default function SprintsPage() {
       return;
     }
     setIsCreating(true);
-    await createSprintMutation.mutateAsync(newSprint);
-    setIsCreating(false);
+    try {
+      await createSprintMutation.mutateAsync(newSprint);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleUpdateSprint = async () => {

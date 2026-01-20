@@ -181,8 +181,11 @@ export default function EpicsPage() {
       return;
     }
     setIsCreating(true);
-    await createEpicMutation.mutateAsync(newEpic);
-    setIsCreating(false);
+    try {
+      await createEpicMutation.mutateAsync(newEpic);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleUpdateEpic = async () => {
