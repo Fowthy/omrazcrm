@@ -61,7 +61,6 @@ const epicColors = [
 export default function EpicsPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [selectedEpic, setSelectedEpic] = useState<Epic | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [filterProject, setFilterProject] = useState<string>('all');
@@ -180,14 +179,20 @@ export default function EpicsPage() {
       toast.error('Epic title is required');
       return;
     }
-    setIsCreating(true);
-    await createEpicMutation.mutateAsync(newEpic);
-    setIsCreating(false);
+    try {
+      await createEpicMutation.mutateAsync(newEpic);
+    } catch (error) {
+      // Error is already handled by onError in mutation
+    }
   };
 
   const handleUpdateEpic = async () => {
     if (!selectedEpic) return;
-    await updateEpicMutation.mutateAsync(selectedEpic);
+    try {
+      await updateEpicMutation.mutateAsync(selectedEpic);
+    } catch (error) {
+      // Error is already handled by onError in mutation
+    }
   };
 
   const filteredEpics = epics?.filter(epic => {
