@@ -35,6 +35,7 @@ import {
   MessageSquare,
   Activity,
   GitBranch,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -60,6 +61,7 @@ const workNavItems = [
   { href: '/sessions', label: 'Sessions', icon: CalendarDays },
   { href: '/notes', label: 'Notes', icon: MessageSquare },
   { href: '/timeline', label: 'Timeline', icon: Activity },
+  { href: '/style-parameters', label: 'Style Parameters', icon: Palette },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/tempo-maps', label: 'Tempo Maps', icon: Timer },
   { href: '/visualizations', label: 'Visualizations', icon: Sparkles },

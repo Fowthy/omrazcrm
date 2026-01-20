@@ -57,6 +57,9 @@ import {
   Download,
   Lightbulb,
   Sparkles,
+  Star,
+  Check,
+  History,
 } from 'lucide-react';
 import { songStatuses, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -121,6 +124,21 @@ interface Visualization {
   parameters: VisualizationParams;
 }
 
+interface SongVersion {
+  id: string;
+  songId: string;
+  fileId: string;
+  versionNumber: number;
+  versionIntent: string | null;
+  recordedAt: string;
+  uploadedBy: string;
+  durationSeconds: number | null;
+  isMainVersion: boolean;
+  listenCount: number;
+  file: SongFile | null;
+  uploadedByUser: { name: string; avatar: string | null } | null;
+}
+
 export default function SongDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -172,6 +190,14 @@ export default function SongDetailPage() {
   // Visualizer state
   const [showVisualizer, setShowVisualizer] = useState(true);
 
+  // Version management state
+  const [isVersionUploadDialogOpen, setIsVersionUploadDialogOpen] = useState(false);
+  const [versionFile, setVersionFile] = useState<File | null>(null);
+  const [versionIntent, setVersionIntent] = useState('');
+  const [isMainVersionUpload, setIsMainVersionUpload] = useState(false);
+  const [isUploadingVersion, setIsUploadingVersion] = useState(false);
+  const versionFileInputRef = useRef<HTMLInputElement>(null);
+
   // Fetch song
   const { data: song, isLoading, refetch } = useQuery<Song>({
     queryKey: ['song', songId],
@@ -196,6 +222,16 @@ export default function SongDetailPage() {
 
   // Get the first linked visualization (could add selector later)
   const linkedVisualization = visualizations?.[0] || null;
+
+  // Fetch song versions
+  const { data: songVersionsList, refetch: refetchVersions } = useQuery<SongVersion[]>({
+    queryKey: ['song-versions', songId],
+    queryFn: async () => {
+      const res = await fetch(`/api/song-versions?songId=${songId}`);
+      if (!res.ok) throw new Error('Failed to fetch versions');
+      return res.json();
+    },
+  });
 
   // Initialize edit form when song loads
   if (song && !editForm.title && song.title !== editForm.title) {
@@ -472,6 +508,119 @@ export default function SongDetailPage() {
     }
   };
 
+  // Version management functions
+  const handleVersionFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVersionFile(file);
+      setIsVersionUploadDialogOpen(true);
+    }
+  };
+
+  const handleUploadVersion = async () => {
+    if (!versionFile) return;
+
+    setIsUploadingVersion(true);
+    try {
+      // First upload the file
+      const uploadRes = await uploadFile({
+        file: versionFile,
+        endpoint: '/api/files',
+        metadata: { songId },
+        onProgress: (progress) => {
+          console.log(`Version upload progress: ${progress}%`);
+        },
+      });
+
+      if (!uploadRes.ok) throw new Error('Failed to upload file');
+
+      const uploadedFile = await uploadRes.json();
+
+      // Then create the version record
+      const versionRes = await fetch('/api/song-versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          songId,
+          fileId: uploadedFile.id,
+          versionIntent: versionIntent || null,
+          isMainVersion: isMainVersionUpload,
+        }),
+      });
+
+      if (!versionRes.ok) throw new Error('Failed to create version');
+
+      toast.success('Version uploaded successfully!');
+      setIsVersionUploadDialogOpen(false);
+      setVersionFile(null);
+      setVersionIntent('');
+      setIsMainVersionUpload(false);
+      if (versionFileInputRef.current) {
+        versionFileInputRef.current.value = '';
+      }
+      refetchVersions();
+      refetch(); // Also refetch song to update file list
+    } catch (error) {
+      console.error('Error uploading version:', error);
+      toast.error('Failed to upload version');
+    } finally {
+      setIsUploadingVersion(false);
+    }
+  };
+
+  const handleSetMainVersion = async (versionId: string) => {
+    try {
+      const res = await fetch(`/api/song-versions/${versionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isMainVersion: true }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update version');
+
+      toast.success('Main version updated!');
+      refetchVersions();
+    } catch (error) {
+      console.error('Error setting main version:', error);
+      toast.error('Failed to update main version');
+    }
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!confirm('Are you sure you want to delete this version?')) return;
+
+    try {
+      const res = await fetch(`/api/song-versions/${versionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to delete version');
+
+      toast.success('Version deleted');
+      refetchVersions();
+      refetch();
+    } catch (error) {
+      console.error('Error deleting version:', error);
+      toast.error('Failed to delete version');
+    }
+  };
+
+  const playVersionAudio = (version: SongVersion) => {
+    if (version.file) {
+      if (currentlyPlaying === version.file.id && isPlaying) {
+        audioRef.current?.pause();
+        setIsPlaying(false);
+      } else {
+        setCurrentlyPlaying(version.file.id);
+        setCurrentTime(0);
+        setTimeout(() => {
+          audioRef.current?.play();
+          setIsPlaying(true);
+        }, 100);
+      }
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       idea: 'bg-gray-500/20 text-gray-400',
@@ -502,7 +651,13 @@ export default function SongDetailPage() {
   };
 
   const getCurrentPlayingFile = () => {
-    return song?.files?.find((f) => f.id === currentlyPlaying);
+    // Check song files first
+    const songFile = song?.files?.find((f) => f.id === currentlyPlaying);
+    if (songFile) return songFile;
+
+    // Check version files
+    const versionFile = songVersionsList?.find((v) => v.file?.id === currentlyPlaying)?.file;
+    return versionFile || null;
   };
 
   if (isLoading) {
@@ -544,6 +699,15 @@ export default function SongDetailPage() {
         className="hidden"
         accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a"
         onChange={handleFileSelect}
+      />
+
+      {/* Hidden version file input */}
+      <input
+        type="file"
+        ref={versionFileInputRef}
+        className="hidden"
+        accept="audio/*,.mp3,.wav,.flac,.aac,.ogg,.m4a"
+        onChange={handleVersionFileSelect}
       />
 
       {/* Hidden audio element */}
@@ -742,10 +906,158 @@ export default function SongDetailPage() {
         <div className="flex-1 min-w-0">
           <Tabs defaultValue="files" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="versions">Versions ({songVersionsList?.length || 0})</TabsTrigger>
           <TabsTrigger value="files">Files ({song.files?.length || 0})</TabsTrigger>
           <TabsTrigger value="comments">Comments ({song.comments?.length || 0})</TabsTrigger>
           <TabsTrigger value="lyrics">Lyrics</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="versions" className="space-y-4">
+          {/* Upload New Version */}
+          <Card className="border-violet-500/30 bg-violet-500/5">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-violet-500/20">
+                    <History className="h-5 w-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-white">Version History</h3>
+                    <p className="text-sm text-zinc-400">
+                      Track different takes and iterations of your song
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => versionFileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload New Version
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Version List */}
+          {songVersionsList?.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <History className="h-12 w-12 text-zinc-500" />
+                <h3 className="mt-4 text-lg font-medium text-white">No versions yet</h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  Upload your first version to start tracking iterations
+                </p>
+                <Button className="mt-4" variant="outline" onClick={() => versionFileInputRef.current?.click()}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload First Version
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {songVersionsList?.map((version) => {
+                const isCurrentlyPlayingThis = version.file && currentlyPlaying === version.file.id;
+                return (
+                  <Card
+                    key={version.id}
+                    className={`transition-all ${
+                      version.isMainVersion
+                        ? 'border-green-500/50 bg-green-500/5'
+                        : isCurrentlyPlayingThis
+                          ? 'border-violet-500'
+                          : ''
+                    }`}
+                  >
+                    <CardContent className="flex items-start gap-4 py-4">
+                      {version.file ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-12 w-12 rounded-full bg-violet-600/20 hover:bg-violet-600"
+                          onClick={() => playVersionAudio(version)}
+                        >
+                          {isCurrentlyPlayingThis && isPlaying ? (
+                            <Pause className="h-5 w-5 text-violet-400" />
+                          ) : (
+                            <Play className="h-5 w-5 text-violet-400 ml-0.5" />
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-800">
+                          <FileAudio className="h-5 w-5 text-zinc-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-white">
+                            Version {version.versionNumber}
+                          </h4>
+                          {version.isMainVersion && (
+                            <Badge className="bg-green-500/20 text-green-400">
+                              <Star className="h-3 w-3 mr-1 fill-current" />
+                              Main
+                            </Badge>
+                          )}
+                        </div>
+                        {version.versionIntent && (
+                          <p className="text-sm text-zinc-400 mb-2">
+                            {version.versionIntent}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-zinc-500">
+                          <span>{formatDate(version.recordedAt)}</span>
+                          {version.durationSeconds && (
+                            <span>{formatDurationTime(version.durationSeconds)}</span>
+                          )}
+                          {version.listenCount > 0 && (
+                            <span>{version.listenCount} plays</span>
+                          )}
+                          {version.uploadedByUser && (
+                            <span>by {version.uploadedByUser.name}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!version.isMainVersion && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSetMainVersion(version.id)}
+                            title="Set as main version"
+                          >
+                            <Star className="h-4 w-4 mr-1" />
+                            Set Main
+                          </Button>
+                        )}
+                        {version.file && (
+                          <a href={version.file.path} download={version.file.name}>
+                            <Button variant="outline" size="icon" className="h-9 w-9">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </a>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteVersion(version.id)}
+                              className="text-red-400"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Version
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="files" className="space-y-4">
           {song.files?.length === 0 ? (
@@ -1216,6 +1528,79 @@ The chorus goes here..."
                 </>
               ) : (
                 'Delete Song'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Version Upload Dialog */}
+      <Dialog open={isVersionUploadDialogOpen} onOpenChange={setIsVersionUploadDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload New Version</DialogTitle>
+            <DialogDescription>
+              Add a new version of this song with notes about what changed.
+            </DialogDescription>
+          </DialogHeader>
+
+          {versionFile && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-zinc-800">
+                <FileAudio className="h-8 w-8 text-violet-400" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-white truncate">{versionFile.name}</p>
+                  <p className="text-sm text-zinc-400">{formatFileSize(versionFile.size)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Version Intent / Notes</Label>
+                <Textarea
+                  placeholder="What's different in this version? (e.g., 'Added bass track', 'New vocal take')"
+                  value={versionIntent}
+                  onChange={(e) => setVersionIntent(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isMainVersion"
+                  checked={isMainVersionUpload}
+                  onChange={(e) => setIsMainVersionUpload(e.target.checked)}
+                  className="rounded border-zinc-700"
+                />
+                <Label htmlFor="isMainVersion" className="cursor-pointer flex items-center gap-2">
+                  <Star className="h-4 w-4 text-yellow-400" />
+                  Set as main version
+                </Label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsVersionUploadDialogOpen(false);
+              setVersionFile(null);
+              setVersionIntent('');
+              setIsMainVersionUpload(false);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUploadVersion} disabled={isUploadingVersion}>
+              {isUploadingVersion ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Version
+                </>
               )}
             </Button>
           </DialogFooter>
