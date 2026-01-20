@@ -124,6 +124,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert empty string or 'none' to null for projectId
+    const normalizedProjectId = projectId && projectId !== 'none' ? projectId : null;
+
     const newSprint = await db
       .insert(sprints)
       .values({
@@ -133,7 +136,7 @@ export async function POST(request: Request) {
         status: status || 'planning',
         startDate: start,
         endDate: end,
-        projectId: projectId || null,
+        projectId: normalizedProjectId,
         createdById: session.user.id,
       })
       .returning();
