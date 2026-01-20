@@ -206,7 +206,7 @@ function playWaveform(type: 'sine' | 'sawtooth' | 'triangle', frequency: number 
 // ============================================
 
 function Metronome() {
-  const [bpm, setBpm] = useState<number | undefined>(undefined);
+  const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [currentSubdivision, setCurrentSubdivision] = useState(0);

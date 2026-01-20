@@ -62,7 +62,6 @@ interface Setlist {
 export default function SetlistsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newSetlist, setNewSetlist] = useState({
     name: '',
     description: '',
@@ -90,8 +89,6 @@ export default function SetlistsPage() {
       return;
     }
 
-    setIsCreating(true);
-
     try {
       const res = await fetch('/api/setlists', {
         method: 'POST',
@@ -107,8 +104,6 @@ export default function SetlistsPage() {
       refetch();
     } catch (error) {
       toast.error('Failed to create setlist');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -197,15 +192,8 @@ export default function SetlistsPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateSetlist} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Setlist'
-                )}
+              <Button onClick={handleCreateSetlist}>
+                Create Setlist
               </Button>
             </DialogFooter>
           </DialogContent>

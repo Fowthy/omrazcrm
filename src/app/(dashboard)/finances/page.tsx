@@ -64,7 +64,6 @@ export default function FinancesPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [newExpense, setNewExpense] = useState({
     title: '',
@@ -92,7 +91,6 @@ export default function FinancesPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/expenses', {
         method: 'POST',
@@ -114,8 +112,6 @@ export default function FinancesPage() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     } catch (error) {
       toast.error('Failed to log expense');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -125,7 +121,6 @@ export default function FinancesPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/expenses/${editingExpense.id}`, {
         method: 'PATCH',
@@ -141,8 +136,6 @@ export default function FinancesPage() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     } catch (error) {
       toast.error('Failed to update expense');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -274,15 +267,8 @@ export default function FinancesPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateExpense} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Expense'
-                )}
+              <Button onClick={handleCreateExpense}>
+                Save Expense
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -480,15 +466,8 @@ export default function FinancesPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditExpense} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleEditExpense}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

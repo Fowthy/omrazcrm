@@ -63,7 +63,6 @@ const columns = [
 export default function TasksPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -111,8 +110,6 @@ export default function TasksPage() {
       return;
     }
 
-    setIsCreating(true);
-
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST',
@@ -138,8 +135,6 @@ export default function TasksPage() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (error) {
       toast.error('Failed to create task');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -287,15 +282,8 @@ export default function TasksPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateTask} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Task'
-                )}
+              <Button onClick={handleCreateTask}>
+                Create Task
               </Button>
             </DialogFooter>
           </DialogContent>
