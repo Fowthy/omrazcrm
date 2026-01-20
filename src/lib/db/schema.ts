@@ -29,20 +29,7 @@ export const sessions = sqliteTable('sessions', {
 // PROJECTS & SONGS
 // ============================================
 
-// Board Configurations - Custom board views (defined here to avoid circular reference)
-export const boardConfigs = sqliteTable('board_configs', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  type: text('type').default('kanban').notNull(), // kanban, scrum, timeline, calendar
-  columns: text('columns').notNull(), // JSON: [{ id, name, status, color, limit }]
-  swimlanes: text('swimlanes'), // JSON: { groupBy: 'assignee' | 'priority' | 'epic' }
-  projectId: text('project_id'), // Reference to projects - added later to avoid circular dependency
-  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
-  createdById: text('created_by_id').notNull().references(() => users.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
+// Board Configurations - REMOVED (Jira-specific, replaced by timeline view)
 
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
@@ -63,8 +50,18 @@ export const projects = sqliteTable('projects', {
   progress: integer('progress').default(0), // 0-100
   defaultAssigneeId: text('default_assignee_id').references(() => users.id),
   leadId: text('lead_id').references(() => users.id), // Project lead
-  // Settings
-  boardConfigId: text('board_config_id').references(() => boardConfigs.id),
+  // Music OS album-centric fields
+  artisticIntent: text('artistic_intent'), // album's artistic purpose
+  emotionalArc: text('emotional_arc'), // emotional journey of the album
+  narrativeTheme: text('narrative_theme'), // overarching theme
+  songCountTarget: integer('song_count_target'), // target number of songs
+  budgetCeiling: real('budget_ceiling'), // maximum budget
+  timelineText: text('timeline_text'), // flexible timeline (not hard dates)
+  selfAssessmentCriteria: text('self_assessment_criteria'), // JSON array
+  targetAudience: text('target_audience'),
+  genreBoundaries: text('genre_boundaries'),
+  instrumentalPalette: text('instrumental_palette'), // JSON array
+  collaborators: text('collaborators'), // JSON array
   // Metadata
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -89,6 +86,16 @@ export const songs = sqliteTable('songs', {
   status: text('status').default('idea').notNull(), // idea, writing, recording, mixing, mastering, released
   trackNumber: integer('track_number'),
   isPublished: integer('is_published', { mode: 'boolean' }).default(false),
+  // Music OS fields
+  phase: text('phase').default('concepting'), // concepting, demo, tracking, mixing, mastering, archived
+  confidence: integer('confidence').default(50), // 0-100, how solid the song feels
+  stabilityScore: integer('stability_score').default(50), // 0-100, how much it's changing
+  lastMajorChange: integer('last_major_change', { mode: 'timestamp' }),
+  narrativeRole: text('narrative_role'), // opener, climax, interlude, closer, bonus, cut
+  artisticIntent: text('artistic_intent'), // why this song exists
+  emotionalTarget: text('emotional_target'),
+  referenceTracksIds: text('reference_tracks_ids'), // JSON array
+  stagnantSince: integer('stagnant_since', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   projectId: text('project_id').references(() => projects.id),
@@ -274,73 +281,161 @@ export const rehearsalNotes = sqliteTable('rehearsal_notes', {
 });
 
 // ============================================
-// PROJECT MANAGEMENT (JIRA-LIKE)
+// MUSIC OS - CORE TABLES
 // ============================================
 
-// Epics - Large bodies of work that group related tasks
-export const epics = sqliteTable('epics', {
+// Style Parameters - Album-level aesthetic and musical parameters
+export const styleParameters = sqliteTable('style_parameters', {
   id: text('id').primaryKey(),
-  key: text('key').notNull().unique(), // e.g., ALB-1, TOUR-2
-  title: text('title').notNull(),
-  description: text('description'),
-  status: text('status').default('planning').notNull(), // planning, in_progress, completed, on_hold, cancelled
-  color: text('color').default('#8B5CF6'),
-  startDate: integer('start_date', { mode: 'timestamp' }),
-  targetDate: integer('target_date', { mode: 'timestamp' }),
-  completedDate: integer('completed_date', { mode: 'timestamp' }),
-  progress: integer('progress').default(0), // 0-100
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  albumId: text('album_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  dimension: text('dimension').notNull(), // musical, sonic, conceptual
+  parameterName: text('parameter_name').notNull(), // e.g., "tempo", "distortion", "intimacy"
+  startValue: text('start_value'), // text or numeric
+  endValue: text('end_value'), // nullable if evolution not defined
+  currentState: text('current_state').default('undecided').notNull(), // undecided, exploring, locked
+  evolutionNotes: text('evolution_notes'), // how it should change across album
+  locked: integer('locked', { mode: 'boolean' }).default(false),
+  lockedAt: integer('locked_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Song Versions - Track demos and recordings with intent
+export const songVersions = sqliteTable('song_versions', {
+  id: text('id').primaryKey(),
+  songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+  fileId: text('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
+  versionNumber: integer('version_number').notNull(),
+  versionIntent: text('version_intent'), // why this version was recorded
+  recordedAt: integer('recorded_at', { mode: 'timestamp' }).notNull(),
+  uploadedBy: text('uploaded_by').notNull().references(() => users.id),
+  durationSeconds: real('duration_seconds'),
+  isMainVersion: integer('is_main_version', { mode: 'boolean' }).default(false),
+  listenCount: integer('listen_count').default(0),
+  lastListenedAt: integer('last_listened_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Song Sections - Song structure with timestamps
+export const songSections = sqliteTable('song_sections', {
+  id: text('id').primaryKey(),
+  songId: text('song_id').notNull().references(() => songs.id, { onDelete: 'cascade' }),
+  sectionName: text('section_name').notNull(), // intro, verse, chorus, bridge, outro, custom
+  startTime: real('start_time'), // seconds, nullable if not yet defined
+  endTime: real('end_time'), // seconds, nullable
+  orderIndex: integer('order_index').notNull(),
+  notes: text('notes'),
+  referenceVersionId: text('reference_version_id').references(() => songVersions.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Section Templates - Reusable song structures
+export const sectionTemplates = sqliteTable('section_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  structure: text('structure').notNull(), // JSON array of section names
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Decisions - Creative decisions (replaces tasks)
+export const decisions = sqliteTable('decisions', {
+  id: text('id').primaryKey(),
+  songId: text('song_id').references(() => songs.id, { onDelete: 'cascade' }),
+  albumId: text('album_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  decisionType: text('decision_type').notNull(), // arrangement, performance, sonic, lyrical, structural, production
+  question: text('question').notNull(), // what needs to be decided
+  context: text('context'), // why it matters
+  status: text('status').default('proposed').notNull(), // proposed, testing, locked, reopened
+  proposedAt: integer('proposed_at', { mode: 'timestamp' }).notNull(),
+  testedAt: integer('tested_at', { mode: 'timestamp' }),
+  lockedAt: integer('locked_at', { mode: 'timestamp' }),
+  reopenedAt: integer('reopened_at', { mode: 'timestamp' }),
+  proposedBy: text('proposed_by').notNull().references(() => users.id),
+  audioProofId: text('audio_proof_id').references(() => files.id, { onDelete: 'set null' }),
+  linkedSectionId: text('linked_section_id').references(() => songSections.id, { onDelete: 'set null' }),
+  instrumentOrRole: text('instrument_or_role'), // guitar, bass, drums, vocals, mix, master
+  outcome: text('outcome'), // what was decided
+  confidence: integer('confidence').default(50), // 0-100
+  daysOpen: integer('days_open').default(0), // computed
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Section Priorities - Priority flags per section/instrument
+export const sectionPriorities = sqliteTable('section_priorities', {
+  id: text('id').primaryKey(),
+  sectionId: text('section_id').notNull().references(() => songSections.id, { onDelete: 'cascade' }),
+  priorityType: text('priority_type').notNull(), // performance, arrangement, recording, mixing, mastering
+  instrumentOrRole: text('instrument_or_role').notNull(),
+  priority: text('priority').notNull(), // high, medium, low
+  notes: text('notes'),
+  resolvedAt: integer('resolved_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+});
+
+// Notes - Timestamped notes (replaces comments)
+export const notes = sqliteTable('notes', {
+  id: text('id').primaryKey(),
+  albumId: text('album_id').references(() => projects.id, { onDelete: 'cascade' }),
+  songId: text('song_id').references(() => songs.id, { onDelete: 'cascade' }),
+  sectionId: text('section_id').references(() => songSections.id, { onDelete: 'cascade' }),
+  noteType: text('note_type').default('text').notNull(), // text, voice
+  content: text('content').notNull(),
+  audioUrl: text('audio_url'),
+  linkedToTimestamp: real('linked_to_timestamp'), // seconds
+  linkedToVersionId: text('linked_to_version_id').references(() => songVersions.id, { onDelete: 'set null' }),
+  createdBy: text('created_by').notNull().references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  isArchived: integer('is_archived', { mode: 'boolean' }).default(false),
+});
+
+// Creative Sessions - Sessions with intent and reflection (replaces rehearsals)
+export const creativeSessions = sqliteTable('creative_sessions', {
+  id: text('id').primaryKey(),
+  albumId: text('album_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  date: integer('date', { mode: 'timestamp' }).notNull(),
+  startTime: integer('start_time', { mode: 'timestamp' }).notNull(),
+  endTime: integer('end_time', { mode: 'timestamp' }),
+  preSessionIntent: text('pre_session_intent'), // what you plan to work on
+  preSessionEnergy: integer('pre_session_energy'), // 1-5 scale
+  postSessionReflection: text('post_session_reflection'), // what actually happened
+  postSessionEnergy: integer('post_session_energy'), // 1-5 scale
+  postSessionMomentum: text('post_session_momentum'), // stalled, slow, steady, flowing, breakthrough
+  decisionsLocked: text('decisions_locked'), // JSON array of decision IDs
+  versionsRecorded: text('versions_recorded'), // JSON array of version IDs
+  participants: text('participants'), // JSON array of user IDs
+  stuckPoints: text('stuck_points'), // what blocked progress
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdById: text('created_by_id').notNull().references(() => users.id),
 });
 
-// Sprints - Time-boxed iterations for completing work
-export const sprints = sqliteTable('sprints', {
+// Momentum Metrics - Weekly momentum tracking
+export const momentumMetrics = sqliteTable('momentum_metrics', {
   id: text('id').primaryKey(),
-  name: text('name').notNull(), // e.g., "Album Recording Sprint 1"
-  goal: text('goal'), // Sprint objective
-  status: text('status').default('planning').notNull(), // planning, active, completed
-  startDate: integer('start_date', { mode: 'timestamp' }).notNull(),
-  endDate: integer('end_date', { mode: 'timestamp' }).notNull(),
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  albumId: text('album_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  weekStart: integer('week_start', { mode: 'timestamp' }).notNull(),
+  decisionsLocked: integer('decisions_locked').default(0),
+  versionsRecorded: integer('versions_recorded').default(0),
+  averageEnergy: real('average_energy'), // 1-5
+  averageMomentum: text('average_momentum'), // stalled, slow, steady, flowing, breakthrough
+  songsActive: integer('songs_active').default(0), // songs with recent activity
+  songsStagnant: integer('songs_stagnant').default(0), // songs with no activity >7 days
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  createdById: text('created_by_id').notNull().references(() => users.id),
 });
 
-// Enhanced Tasks with Jira-like features
-export const tasks = sqliteTable('tasks', {
-  id: text('id').primaryKey(),
-  key: text('key').notNull().unique(), // e.g., TASK-123
-  title: text('title').notNull(),
-  description: text('description'),
-  type: text('type').default('task').notNull(), // story, task, bug, recording, mixing, mastering, writing, marketing, video, live_show
-  status: text('status').default('todo').notNull(), // todo, in_progress, review, done, blocked, backlog
-  priority: text('priority').default('medium').notNull(), // low, medium, high, urgent
-  storyPoints: integer('story_points'), // Estimation (1, 2, 3, 5, 8, 13, 21)
-  timeEstimate: integer('time_estimate'), // Estimated time in minutes
-  timeSpent: integer('time_spent').default(0), // Actual time spent in minutes
-  dueDate: integer('due_date', { mode: 'timestamp' }),
-  startDate: integer('start_date', { mode: 'timestamp' }),
-  completedDate: integer('completed_date', { mode: 'timestamp' }),
-  // Relationships
-  epicId: text('epic_id').references(() => epics.id, { onDelete: 'set null' }),
-  sprintId: text('sprint_id').references(() => sprints.id, { onDelete: 'set null' }),
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
-  songId: text('song_id').references(() => songs.id, { onDelete: 'set null' }),
-  parentTaskId: text('parent_task_id'), // For subtasks - self-reference to tasks.id (handled at app level to avoid circular ref)
-  // Assignment
-  reporterId: text('reporter_id').notNull().references(() => users.id), // Who created it
-  assigneeId: text('assignee_id').references(() => users.id), // Who's working on it
-  // Position for ordering in lists/boards
-  position: integer('position').default(0),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  createdById: text('created_by_id').notNull().references(() => users.id),
-});
+// ============================================
+// PROJECT MANAGEMENT
+// ============================================
 
-// Labels - Flexible tagging system for tasks
+// JIRA TABLES REMOVED - Migrated to Music OS
+// See migration-phase-4-drop-old-tables.sql for details
+// Removed: epics, sprints, tasks, subtasks, taskDependencies, taskLabels,
+//          timeLogs, savedFilters, taskComments, taskAttachments, taskHistory
+
+// Labels - Flexible tagging system (kept for songs/decisions)
 export const labels = sqliteTable('labels', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -350,92 +445,13 @@ export const labels = sqliteTable('labels', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-// Task Labels - Many-to-many relationship
-export const taskLabels = sqliteTable('task_labels', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  labelId: text('label_id').notNull().references(() => labels.id, { onDelete: 'cascade' }),
-});
-
-// Task Dependencies - Block/Depend relationships
-export const taskDependencies = sqliteTable('task_dependencies', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }), // This task
-  dependsOnTaskId: text('depends_on_task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }), // Depends on this task
-  type: text('type').default('blocks').notNull(), // blocks, is_blocked_by, relates_to
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Subtasks (kept for backward compatibility, but can be replaced by parentTaskId)
-export const subtasks = sqliteTable('subtasks', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  completed: integer('completed', { mode: 'boolean' }).default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Time Logs - Track time spent on tasks
-export const timeLogs = sqliteTable('time_logs', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id),
-  timeSpent: integer('time_spent').notNull(), // Minutes
-  description: text('description'),
-  loggedAt: integer('logged_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
 // Project Members - Team members with roles
 export const projectMembers = sqliteTable('project_members', {
   id: text('id').primaryKey(),
   projectId: text('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  role: text('role').notNull(), // project_lead, developer, designer, qa, musician, engineer, producer
+  role: text('role').notNull(), // project_lead, musician, engineer, producer
   joinedAt: integer('joined_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Saved Filters - Save complex filter combinations
-export const savedFilters = sqliteTable('saved_filters', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  filterConfig: text('filter_config').notNull(), // JSON: { status: [], priority: [], assignee: [], etc. }
-  isPublic: integer('is_public', { mode: 'boolean' }).default(false), // Shared with team or personal
-  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }), // null = global
-  createdById: text('created_by_id').notNull().references(() => users.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Task Comments (enhanced from general comments)
-export const taskComments = sqliteTable('task_comments', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  content: text('content').notNull(),
-  userId: text('user_id').notNull().references(() => users.id),
-  parentId: text('parent_id'), // For threaded comments
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Task Attachments
-export const taskAttachments = sqliteTable('task_attachments', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  fileId: text('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
-});
-
-// Task History - Audit log for changes
-export const taskHistory = sqliteTable('task_history', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id),
-  field: text('field').notNull(), // status, assignee, priority, etc.
-  oldValue: text('old_value'),
-  newValue: text('new_value'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 // ============================================
