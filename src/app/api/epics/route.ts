@@ -90,16 +90,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Convert empty string to null for projectId
+    const normalizedProjectId = projectId && projectId.trim() !== '' ? projectId : null;
+
     // Generate unique key for epic
-    const projectPrefix = projectId
-      ? (await db.select().from(projects).where(eq(projects.id, projectId)).limit(1))[0]?.key || 'EPIC'
+    const projectPrefix = normalizedProjectId
+      ? (await db.select().from(projects).where(eq(projects.id, normalizedProjectId)).limit(1))[0]?.key || 'EPIC'
       : 'EPIC';
 
     // Get count of epics for this project to generate next number
     const existingEpics = await db
       .select()
       .from(epics)
-      .where(projectId ? eq(epics.projectId, projectId) : isNull(epics.projectId));
+      .where(normalizedProjectId ? eq(epics.projectId, normalizedProjectId) : isNull(epics.projectId));
 
     const epicNumber = existingEpics.length + 1;
     const key = `${projectPrefix}-${epicNumber}`;
@@ -115,7 +118,7 @@ export async function POST(request: Request) {
         color: color || '#8B5CF6',
         startDate: startDate ? new Date(startDate) : null,
         targetDate: targetDate ? new Date(targetDate) : null,
-        projectId: projectId || null,
+        projectId: normalizedProjectId,
         progress: 0,
         createdById: session.user.id,
       })

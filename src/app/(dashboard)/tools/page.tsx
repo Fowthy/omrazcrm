@@ -206,7 +206,7 @@ function playWaveform(type: 'sine' | 'sawtooth' | 'triangle', frequency: number 
 // ============================================
 
 function Metronome() {
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [currentSubdivision, setCurrentSubdivision] = useState(0);
@@ -220,6 +220,7 @@ function Metronome() {
   const beatCountRef = useRef(0);
 
   const startMetronome = useCallback(() => {
+    if (!bpm || bpm <= 0) return;
     const baseInterval = (60 / bpm) * 1000;
     const subInterval = baseInterval / subdivision;
     beatCountRef.current = 0;
@@ -300,7 +301,7 @@ function Metronome() {
       }
       const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const calculatedBpm = Math.round(60000 / avgInterval);
-      if (calculatedBpm >= 30 && calculatedBpm <= 300) {
+      if (calculatedBpm >= 20 && calculatedBpm <= 999) {
         setBpm(calculatedBpm);
       }
     }
@@ -319,7 +320,7 @@ function Metronome() {
       <CardContent className="space-y-6">
         {/* BPM Display */}
         <div className="text-center">
-          <div className="text-6xl font-bold text-white mb-2">{bpm}</div>
+          <div className="text-6xl font-bold text-white mb-2">{bpm ?? '--'}</div>
           <div className="text-zinc-400">BPM</div>
         </div>
 
@@ -390,10 +391,10 @@ function Metronome() {
           <div className="flex justify-between text-sm text-zinc-400">
             <span>30</span>
             <span>Tempo</span>
-            <span>300</span>
+            <span>300+</span>
           </div>
           <Slider
-            value={[bpm]}
+            value={[bpm ?? 120]}
             min={30}
             max={300}
             step={1}
@@ -773,7 +774,7 @@ const DRUM_PRESETS: { name: string; pattern: Record<DrumType, boolean[]> }[] = [
 ];
 
 function DrumSequencer() {
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState(16);
@@ -817,7 +818,7 @@ function DrumSequencer() {
   };
 
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && bpm && bpm > 0) {
       const interval = (60 / bpm / 4) * 1000; // 16th notes
       intervalRef.current = setInterval(() => {
         setCurrentStep((prev) => {
@@ -887,9 +888,13 @@ function DrumSequencer() {
             <Label className="text-zinc-400 whitespace-nowrap">BPM:</Label>
             <Input
               type="number"
-              value={bpm}
-              onChange={(e) => setBpm(Math.max(30, Math.min(300, parseInt(e.target.value) || 120)))}
-              className="w-20"
+              value={bpm ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setBpm(val === '' ? undefined : Math.max(1, parseInt(val)));
+              }}
+              placeholder="120"
+              className="w-24 sm:w-28"
             />
           </div>
         </div>
@@ -1016,7 +1021,7 @@ const MODULATION_PAIRS = [
 ];
 
 function MetricModulationCalculator() {
-  const [sourceBpm, setSourceBpm] = useState(120);
+  const [sourceBpm, setSourceBpm] = useState<number | undefined>(undefined);
   const [viewMode, setViewMode] = useState<'table' | 'calculator'>('table');
   const [sourceNote, setSourceNote] = useState(0.25); // Quarter note
   const [targetNote, setTargetNote] = useState(0.125); // Eighth note
@@ -1024,10 +1029,10 @@ function MetricModulationCalculator() {
   // Calculate all modulations for table view
   const allModulations = MODULATION_PAIRS.map((pair) => ({
     ...pair,
-    newTempo: Math.round((sourceBpm * pair.fromValue) / pair.toValue),
+    newTempo: sourceBpm ? Math.round((sourceBpm * pair.fromValue) / pair.toValue) : 0,
   }));
 
-  const targetBpm = Math.round((sourceBpm * sourceNote) / targetNote);
+  const targetBpm = sourceBpm ? Math.round((sourceBpm * sourceNote) / targetNote) : 0;
 
   return (
     <Card>
@@ -1062,9 +1067,13 @@ function MetricModulationCalculator() {
         <div className="flex items-center gap-2 flex-wrap">
           <Input
             type="number"
-            value={sourceBpm}
-            onChange={(e) => setSourceBpm(Math.max(1, parseInt(e.target.value) || 120))}
-            className="text-xl h-10 text-center font-bold w-20"
+            value={sourceBpm ?? ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSourceBpm(val === '' ? undefined : Math.max(1, parseInt(val)));
+            }}
+            placeholder="120"
+            className="text-xl h-10 text-center font-bold w-24 sm:w-28"
           />
           <span className="text-zinc-400 text-sm">BPM</span>
           <div className="flex gap-1 ml-auto">
@@ -1088,7 +1097,7 @@ function MetricModulationCalculator() {
             {/* Main modulations grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1.5">
               {allModulations.map((mod, i) => {
-                const isIncrease = mod.newTempo > sourceBpm;
+                const isIncrease = sourceBpm ? mod.newTempo > sourceBpm : false;
                 return (
                   <div
                     key={i}
@@ -1112,19 +1121,19 @@ function MetricModulationCalculator() {
             <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-zinc-800">
               <div className="text-center">
                 <div className="text-[10px] text-zinc-500">½</div>
-                <div className="text-sm font-bold text-white">{Math.round(sourceBpm / 2)}</div>
+                <div className="text-sm font-bold text-white">{sourceBpm ? Math.round(sourceBpm / 2) : '--'}</div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-zinc-500">2×</div>
-                <div className="text-sm font-bold text-white">{sourceBpm * 2}</div>
+                <div className="text-sm font-bold text-white">{sourceBpm ? sourceBpm * 2 : '--'}</div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-zinc-500">×1.5</div>
-                <div className="text-sm font-bold text-white">{Math.round(sourceBpm * 1.5)}</div>
+                <div className="text-sm font-bold text-white">{sourceBpm ? Math.round(sourceBpm * 1.5) : '--'}</div>
               </div>
               <div className="text-center">
                 <div className="text-[10px] text-zinc-500">×⅔</div>
-                <div className="text-sm font-bold text-white">{Math.round(sourceBpm * 2/3)}</div>
+                <div className="text-sm font-bold text-white">{sourceBpm ? Math.round(sourceBpm * 2/3) : '--'}</div>
               </div>
             </div>
           </div>
@@ -1173,13 +1182,13 @@ function MetricModulationCalculator() {
             <div className="bg-zinc-800/50 rounded-lg p-3 text-center">
               <div className="flex items-center justify-center gap-3">
                 <span className="text-zinc-400 text-sm">
-                  {NOTE_VALUES.find((n) => n.value === sourceNote)?.symbol} @ {sourceBpm}
+                  {NOTE_VALUES.find((n) => n.value === sourceNote)?.symbol} @ {sourceBpm ?? '--'}
                 </span>
                 <span className="text-zinc-500">=</span>
                 <span className="text-zinc-400 text-sm">
                   {NOTE_VALUES.find((n) => n.value === targetNote)?.symbol} @
                 </span>
-                <span className="text-3xl font-bold text-violet-400">{targetBpm}</span>
+                <span className="text-3xl font-bold text-violet-400">{targetBpm || '--'}</span>
               </div>
             </div>
           </div>
@@ -1194,9 +1203,9 @@ function MetricModulationCalculator() {
 // ============================================
 
 function DelayTimeCalculator() {
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
 
-  const msPerBeat = 60000 / bpm;
+  const msPerBeat = bpm ? 60000 / bpm : 0;
 
   const delayTimes = [
     { name: 'Whole', multiplier: 4, symbol: '𝅝' },
@@ -1227,9 +1236,13 @@ function DelayTimeCalculator() {
             <div className="flex items-center gap-2">
               <Input
                 type="number"
-                value={bpm}
-                onChange={(e) => setBpm(Math.max(1, parseInt(e.target.value) || 120))}
-                className="text-2xl h-14 text-center font-bold w-32"
+                value={bpm ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBpm(val === '' ? undefined : Math.max(1, parseInt(val)));
+                }}
+                placeholder="120"
+                className="text-2xl h-14 text-center font-bold w-32 sm:w-36"
               />
               <span className="text-zinc-400 text-lg">BPM</span>
             </div>
@@ -1309,12 +1322,12 @@ function DelayTimeCalculator() {
 // ============================================
 
 function SongTimeCalculator() {
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
   const [bars, setBars] = useState(32);
   const [beatsPerBar, setBeatsPerBar] = useState(4);
 
   const totalBeats = bars * beatsPerBar;
-  const totalSeconds = (totalBeats / bpm) * 60;
+  const totalSeconds = bpm ? (totalBeats / bpm) * 60 : 0;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.round(totalSeconds % 60);
 
@@ -1322,7 +1335,7 @@ function SongTimeCalculator() {
   const [targetMinutes, setTargetMinutes] = useState(3);
   const [targetSeconds, setTargetSeconds] = useState(30);
   const targetTotalSeconds = targetMinutes * 60 + targetSeconds;
-  const barsNeeded = Math.round((targetTotalSeconds * bpm) / (60 * beatsPerBar));
+  const barsNeeded = bpm ? Math.round((targetTotalSeconds * bpm) / (60 * beatsPerBar)) : 0;
 
   return (
     <Card>
@@ -1340,12 +1353,16 @@ function SongTimeCalculator() {
           <div className="flex items-center gap-2">
             <Input
               type="number"
-              value={bpm}
-              onChange={(e) => setBpm(Math.max(1, parseInt(e.target.value) || 120))}
-              className="w-24"
+              value={bpm ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setBpm(val === '' ? undefined : Math.max(1, parseInt(val)));
+              }}
+              placeholder="120"
+              className="w-24 sm:w-28"
             />
             <Select value={beatsPerBar.toString()} onValueChange={(v) => setBeatsPerBar(parseInt(v))}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-20 sm:w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1419,7 +1436,7 @@ function SongTimeCalculator() {
 
         {/* Common song sections */}
         <div className="bg-zinc-800/30 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-zinc-300 mb-3">Common Sections at {bpm} BPM</h4>
+          <h4 className="text-sm font-medium text-zinc-300 mb-3">Common Sections at {bpm ?? '--'} BPM</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               { name: 'Intro (4 bars)', bars: 4 },
@@ -1427,7 +1444,7 @@ function SongTimeCalculator() {
               { name: 'Chorus (8 bars)', bars: 8 },
               { name: 'Bridge (8 bars)', bars: 8 },
             ].map((section) => {
-              const secs = (section.bars * beatsPerBar / bpm) * 60;
+              const secs = bpm ? (section.bars * beatsPerBar / bpm) * 60 : 0;
               return (
                 <div key={section.name} className="bg-zinc-800/50 rounded p-2 text-center">
                   <div className="text-zinc-400 text-xs">{section.name}</div>
@@ -1466,13 +1483,13 @@ function PolyrhythmTool() {
     { id: 1, rhythm: 3, subdivision: 1, sound: 'kick', volume: 0.7, frequency: 880, currentBeat: 0, color: 'amber' },
     { id: 2, rhythm: 2, subdivision: 1, sound: 'snare', volume: 0.7, frequency: 440, currentBeat: 0, color: 'violet' },
   ]);
-  const [bpm, setBpm] = useState(60);
+  const [bpm, setBpm] = useState<number | undefined>(undefined);
   const [isPlaying, setIsPlaying] = useState(false);
   const intervalRefs = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const nextId = useRef(3);
 
   const baseRhythm = rhythms.length > 0 ? rhythms[rhythms.length - 1].rhythm : 2;
-  const cycleDuration = bpm > 0 ? (60 / bpm) * 1000 * baseRhythm : 1000000; // Full cycle in ms
+  const cycleDuration = bpm && bpm > 0 ? (60 / bpm) * 1000 * baseRhythm : 1000000; // Full cycle in ms
 
   const playSound = (config: RhythmConfig) => {
     if (['sine', 'sawtooth', 'triangle'].includes(config.sound)) {
@@ -1487,7 +1504,7 @@ function PolyrhythmTool() {
     intervalRefs.current.forEach((interval) => clearInterval(interval));
     intervalRefs.current.clear();
 
-    if (isPlaying && bpm > 0) {
+    if (isPlaying && bpm && bpm > 0) {
       rhythms.forEach((config) => {
         const totalBeats = config.rhythm * config.subdivision;
         const interval = cycleDuration / totalBeats;
@@ -1639,11 +1656,15 @@ function PolyrhythmTool() {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-zinc-400 mb-2 block">BPM (0-1000)</Label>
+              <Label className="text-zinc-400 mb-2 block">BPM</Label>
               <Input
                 type="number"
-                value={bpm}
-                onChange={(e) => setBpm(Math.max(0, Math.min(1000, parseInt(e.target.value) || 0)))}
+                value={bpm ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setBpm(val === '' ? undefined : Math.max(0, parseInt(val)));
+                }}
+                placeholder="Enter BPM"
               />
             </div>
             <div className="flex items-end">
@@ -1796,11 +1817,11 @@ const TEMPO_MARKINGS = [
 ];
 
 function TempoMarkingReference() {
-  const [currentBpm, setCurrentBpm] = useState(120);
+  const [currentBpm, setCurrentBpm] = useState<number | undefined>(undefined);
 
-  const currentMarking = TEMPO_MARKINGS.find(
+  const currentMarking = currentBpm ? TEMPO_MARKINGS.find(
     (m) => currentBpm >= m.range[0] && currentBpm <= m.range[1]
-  );
+  ) : null;
 
   return (
     <Card>
@@ -1819,9 +1840,13 @@ function TempoMarkingReference() {
               <Label className="text-zinc-400 mb-2 block">Your tempo</Label>
               <Input
                 type="number"
-                value={currentBpm}
-                onChange={(e) => setCurrentBpm(Math.max(1, parseInt(e.target.value) || 120))}
-                className="w-24"
+                value={currentBpm ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCurrentBpm(val === '' ? undefined : Math.max(1, parseInt(val)));
+                }}
+                placeholder="120"
+                className="w-24 sm:w-28"
               />
             </div>
             <div className="flex-1 text-center">
@@ -1841,7 +1866,7 @@ function TempoMarkingReference() {
         <div className="bg-zinc-800/50 rounded-lg overflow-hidden max-h-80 overflow-y-auto">
           <div className="divide-y divide-zinc-700/50">
             {TEMPO_MARKINGS.map((marking) => {
-              const isActive = currentBpm >= marking.range[0] && currentBpm <= marking.range[1];
+              const isActive = currentBpm ? currentBpm >= marking.range[0] && currentBpm <= marking.range[1] : false;
               return (
                 <button
                   key={marking.name}
@@ -2021,7 +2046,7 @@ function TapTempo() {
       }
       const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const calculatedBpm = Math.round(60000 / avgInterval);
-      if (calculatedBpm >= 20 && calculatedBpm <= 400) {
+      if (calculatedBpm >= 20 && calculatedBpm <= 999) {
         setBpm(calculatedBpm);
       }
     }
