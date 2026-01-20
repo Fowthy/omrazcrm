@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,10 +16,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const creativeSession = await db
       .select()
       .from(creativeSessions)
-      .where(eq(creativeSessions.id, params.id))
+      .where(eq(creativeSessions.id, id))
       .limit(1);
 
     if (!creativeSession || creativeSession.length === 0) {
@@ -38,7 +40,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -46,6 +48,8 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const body = await request.json();
     const {
@@ -73,7 +77,7 @@ export async function PATCH(
     const updatedSession = await db
       .update(creativeSessions)
       .set(updateData)
-      .where(eq(creativeSessions.id, params.id))
+      .where(eq(creativeSessions.id, id))
       .returning();
 
     if (!updatedSession || updatedSession.length === 0) {
@@ -93,7 +97,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -102,7 +106,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await db.delete(creativeSessions).where(eq(creativeSessions.id, params.id));
+    const { id } = await params;
+
+    await db.delete(creativeSessions).where(eq(creativeSessions.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

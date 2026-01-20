@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { shows, rehearsals, tasks, projects } from '@/lib/db/schema';
+import { shows, creativeSessions, decisions, projects } from '@/lib/db/schema';
 import { gte, lte, and, isNotNull } from 'drizzle-orm';
 // Use Node.js runtime for file:// database URLs (local SQLite)
 export const runtime = 'nodejs';
@@ -34,30 +34,30 @@ export async function GET(request: Request) {
       .where(and(gte(shows.date, start), lte(shows.date, end)))
       .all();
 
-    // Fetch rehearsals
-    const rehearsalEvents = await db
+    // Fetch creative sessions
+    const sessionEvents = await db
       .select({
-        id: rehearsals.id,
-        title: rehearsals.title,
-        date: rehearsals.scheduledAt,
-        endTime: rehearsals.endTime,
-        location: rehearsals.location,
+        id: creativeSessions.id,
+        date: creativeSessions.date,
+        startTime: creativeSessions.startTime,
+        endTime: creativeSessions.endTime,
+        intent: creativeSessions.preSessionIntent,
       })
-      .from(rehearsals)
-      .where(and(gte(rehearsals.scheduledAt, start), lte(rehearsals.scheduledAt, end)))
+      .from(creativeSessions)
+      .where(and(gte(creativeSessions.date, start), lte(creativeSessions.date, end)))
       .all();
 
-    // Fetch tasks with due dates
-    const taskEvents = await db
+    // Fetch decisions locked in date range
+    const decisionEvents = await db
       .select({
-        id: tasks.id,
-        title: tasks.title,
-        date: tasks.dueDate,
-        status: tasks.status,
-        priority: tasks.priority,
+        id: decisions.id,
+        question: decisions.question,
+        date: decisions.lockedAt,
+        status: decisions.status,
+        decisionType: decisions.decisionType,
       })
-      .from(tasks)
-      .where(and(isNotNull(tasks.dueDate), gte(tasks.dueDate, start), lte(tasks.dueDate, end)))
+      .from(decisions)
+      .where(and(isNotNull(decisions.lockedAt), gte(decisions.lockedAt, start), lte(decisions.lockedAt, end)))
       .all();
 
     // Fetch project release dates
@@ -82,22 +82,22 @@ export async function GET(request: Request) {
         color: '#8B5CF6', // violet
         metadata: { venue: e.venue, city: e.city, status: e.status },
       })),
-      ...rehearsalEvents.map((e) => ({
+      ...sessionEvents.map((e) => ({
         id: e.id,
-        title: e.title,
+        title: e.intent || 'Creative Session',
         start: e.date,
         end: e.endTime,
-        type: 'rehearsal' as const,
+        type: 'session' as const,
         color: '#06B6D4', // cyan
-        metadata: { location: e.location },
+        metadata: { intent: e.intent },
       })),
-      ...taskEvents.map((e) => ({
+      ...decisionEvents.map((e) => ({
         id: e.id,
-        title: e.title,
+        title: `Decision: ${e.question}`,
         start: e.date,
-        type: 'task' as const,
-        color: e.priority === 'urgent' ? '#EF4444' : e.priority === 'high' ? '#F97316' : '#22C55E',
-        metadata: { status: e.status, priority: e.priority },
+        type: 'decision' as const,
+        color: '#10B981', // green
+        metadata: { status: e.status, decisionType: e.decisionType },
       })),
       ...projectEvents.map((e) => ({
         id: e.id,

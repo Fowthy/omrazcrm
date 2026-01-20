@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -16,10 +16,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const decision = await db
       .select()
       .from(decisions)
-      .where(eq(decisions.id, params.id))
+      .where(eq(decisions.id, id))
       .limit(1);
 
     if (!decision || decision.length === 0) {
@@ -38,7 +40,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -46,6 +48,8 @@ export async function PATCH(
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const body = await request.json();
     const {
@@ -85,7 +89,7 @@ export async function PATCH(
     const updatedDecision = await db
       .update(decisions)
       .set(updateData)
-      .where(eq(decisions.id, params.id))
+      .where(eq(decisions.id, id))
       .returning();
 
     if (!updatedDecision || updatedDecision.length === 0) {
@@ -105,7 +109,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -114,7 +118,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await db.delete(decisions).where(eq(decisions.id, params.id));
+    const { id } = await params;
+
+    await db.delete(decisions).where(eq(decisions.id, id));
 
     return NextResponse.json({ success: true });
   } catch (error) {
