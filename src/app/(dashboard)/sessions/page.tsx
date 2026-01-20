@@ -11,7 +11,26 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Plus, Music, Clock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { CalendarDays, Plus, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CreativeSession {
   id: string;
@@ -28,6 +47,11 @@ interface CreativeSession {
   createdBy: { name: string; avatar: string | null } | null;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 const momentumColors: Record<string, string> = {
   stalled: 'bg-red-500/20 text-red-400',
   slow: 'bg-orange-500/20 text-orange-400',
@@ -41,9 +65,22 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<CreativeSession[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    albumId: '',
+    preSessionIntent: '',
+    preSessionEnergy: 3,
+  });
+
   useEffect(() => {
     if (session?.user) {
       fetchSessions();
+      fetchProjects();
     }
   }, [session]);
 
@@ -58,6 +95,60 @@ export default function SessionsPage() {
       console.error('Error fetching sessions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.albumId) {
+      toast.error('Please select an album');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const now = new Date();
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          albumId: formData.albumId,
+          date: now.toISOString(),
+          startTime: now.toISOString(),
+          preSessionIntent: formData.preSessionIntent || null,
+          preSessionEnergy: formData.preSessionEnergy,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Session started successfully');
+        setDialogOpen(false);
+        setFormData({
+          albumId: '',
+          preSessionIntent: '',
+          preSessionEnergy: 3,
+        });
+        fetchSessions();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to start session');
+      }
+    } catch (error) {
+      console.error('Error starting session:', error);
+      toast.error('Failed to start session');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -92,11 +183,102 @@ export default function SessionsPage() {
             Track your creative work with intent and reflection
           </p>
         </div>
-        <Button className="bg-violet-600 hover:bg-violet-700">
+        <Button
+          className="bg-violet-600 hover:bg-violet-700"
+          onClick={() => setDialogOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Session
         </Button>
       </div>
+
+      {/* New Session Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Start New Session</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Begin a creative session with intent. What do you plan to work on?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Album *</Label>
+              <Select
+                value={formData.albumId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, albumId: value })
+                }
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Select an album" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Session Intent</Label>
+              <Textarea
+                placeholder="What do you plan to work on today?"
+                className="bg-zinc-800 border-zinc-700 text-white resize-none"
+                rows={3}
+                value={formData.preSessionIntent}
+                onChange={(e) =>
+                  setFormData({ ...formData, preSessionIntent: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-zinc-300">Energy Level</Label>
+                <span className="text-zinc-400 text-sm">
+                  {formData.preSessionEnergy}/5
+                </span>
+              </div>
+              <Slider
+                value={[formData.preSessionEnergy]}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, preSessionEnergy: value[0] })
+                }
+                min={1}
+                max={5}
+                step={1}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-zinc-500">
+                <span>Low</span>
+                <span>High</span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-zinc-700 text-zinc-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              {submitting ? 'Starting...' : 'Start Session'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Sessions Grid */}
       {sessions.length === 0 ? (
@@ -107,7 +289,10 @@ export default function SessionsPage() {
             <p className="text-zinc-500 text-sm mb-4">
               Start tracking your creative sessions with intent and reflection
             </p>
-            <Button className="bg-violet-600 hover:bg-violet-700">
+            <Button
+              className="bg-violet-600 hover:bg-violet-700"
+              onClick={() => setDialogOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Start First Session
             </Button>

@@ -11,8 +11,27 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { GitBranch, Plus, Music, Album } from 'lucide-react';
-import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 interface Decision {
   id: string;
@@ -28,6 +47,17 @@ interface Decision {
   proposedByUser: { name: string; avatar: string | null } | null;
   song: { title: string } | null;
   album: { name: string } | null;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface Song {
+  id: string;
+  title: string;
+  projectId: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -46,15 +76,42 @@ const decisionTypeColors: Record<string, string> = {
   production: 'bg-red-500/20 text-red-400',
 };
 
+const DECISION_TYPES = [
+  { value: 'arrangement', label: 'Arrangement' },
+  { value: 'performance', label: 'Performance' },
+  { value: 'sonic', label: 'Sonic' },
+  { value: 'lyrical', label: 'Lyrical' },
+  { value: 'structural', label: 'Structural' },
+  { value: 'production', label: 'Production' },
+];
+
 export default function DecisionsPage() {
   const { data: session } = useSession();
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
 
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    albumId: '',
+    songId: '',
+    decisionType: '',
+    question: '',
+    context: '',
+    confidence: 50,
+  });
+
   useEffect(() => {
     if (session?.user) {
       fetchDecisions();
+      fetchProjects();
+      fetchSongs();
     }
   }, [session]);
 
@@ -71,6 +128,87 @@ export default function DecisionsPage() {
       setLoading(false);
     }
   };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const fetchSongs = async () => {
+    try {
+      const response = await fetch('/api/songs');
+      if (response.ok) {
+        const data = await response.json();
+        setSongs(data);
+      }
+    } catch (error) {
+      console.error('Error fetching songs:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.albumId) {
+      toast.error('Please select an album');
+      return;
+    }
+    if (!formData.decisionType) {
+      toast.error('Please select a decision type');
+      return;
+    }
+    if (!formData.question.trim()) {
+      toast.error('Please enter a question');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          albumId: formData.albumId,
+          songId: formData.songId || null,
+          decisionType: formData.decisionType,
+          question: formData.question,
+          context: formData.context || null,
+          confidence: formData.confidence,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Decision created successfully');
+        setDialogOpen(false);
+        setFormData({
+          albumId: '',
+          songId: '',
+          decisionType: '',
+          question: '',
+          context: '',
+          confidence: 50,
+        });
+        fetchDecisions();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to create decision');
+      }
+    } catch (error) {
+      console.error('Error creating decision:', error);
+      toast.error('Failed to create decision');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredSongs = formData.albumId
+    ? songs.filter((s) => s.projectId === formData.albumId)
+    : songs;
 
   const filteredDecisions = decisions.filter((decision) => {
     if (filter === 'all') return true;
@@ -100,11 +238,153 @@ export default function DecisionsPage() {
             Creative decisions that shape your music
           </p>
         </div>
-        <Button className="bg-violet-600 hover:bg-violet-700">
+        <Button
+          className="bg-violet-600 hover:bg-violet-700"
+          onClick={() => setDialogOpen(true)}
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Decision
         </Button>
       </div>
+
+      {/* New Decision Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create New Decision</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Propose a creative decision that needs to be made for your music.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Album *</Label>
+              <Select
+                value={formData.albumId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, albumId: value, songId: '' })
+                }
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Select an album" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Song (optional)</Label>
+              <Select
+                value={formData.songId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, songId: value })
+                }
+                disabled={!formData.albumId}
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Select a song" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {filteredSongs.map((song) => (
+                    <SelectItem key={song.id} value={song.id}>
+                      {song.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Decision Type *</Label>
+              <Select
+                value={formData.decisionType}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, decisionType: value })
+                }
+              >
+                <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  {DECISION_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Question *</Label>
+              <Input
+                placeholder="What needs to be decided?"
+                className="bg-zinc-800 border-zinc-700 text-white"
+                value={formData.question}
+                onChange={(e) =>
+                  setFormData({ ...formData, question: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-300">Context</Label>
+              <Textarea
+                placeholder="Why does this decision matter?"
+                className="bg-zinc-800 border-zinc-700 text-white resize-none"
+                rows={3}
+                value={formData.context}
+                onChange={(e) =>
+                  setFormData({ ...formData, context: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label className="text-zinc-300">Confidence</Label>
+                <span className="text-zinc-400 text-sm">
+                  {formData.confidence}%
+                </span>
+              </div>
+              <Slider
+                value={[formData.confidence]}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, confidence: value[0] })
+                }
+                min={0}
+                max={100}
+                step={5}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="border-zinc-700 text-zinc-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              {submitting ? 'Creating...' : 'Create Decision'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
@@ -154,7 +434,10 @@ export default function DecisionsPage() {
             <p className="text-zinc-500 text-sm mb-4">
               Start making creative decisions to shape your album
             </p>
-            <Button className="bg-violet-600 hover:bg-violet-700">
+            <Button
+              className="bg-violet-600 hover:bg-violet-700"
+              onClick={() => setDialogOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create First Decision
             </Button>
