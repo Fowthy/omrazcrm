@@ -66,20 +66,20 @@
 1. ~~Run database migrations in production~~ ✅ Done
 2. ~~Create API endpoints for new primitives~~ ✅ Done
 3. ~~Enhance UI pages with forms and workflows~~ ✅ Basic forms done
-4. Build audio player component with waveform
-5. Enhance timeline view with playable events
+4. ~~Build audio player component with waveform~~ ✅ Done (audio-player.tsx exists)
+5. ~~Enhance timeline view with playable events~~ ✅ Done
 
 **Medium Priority:**
-6. Song version management UI (upload flow)
-7. Decision status transitions UI (propose → test → lock)
-8. Session end/reflection form
-9. Momentum metrics dashboard widget
+6. ~~Song version management UI (upload flow)~~ ✅ Done
+7. ~~Decision status transitions UI (propose → test → lock)~~ ✅ Done
+8. ~~Session end/reflection form~~ ✅ Done
+9. ~~Momentum metrics dashboard widget~~ ✅ Done
 
 **Low Priority:**
-10. Style parameters UI
+10. ~~Style parameters UI~~ ✅ Done
 11. Section editor with timestamp sync
-12. Voice notes recording
-13. Advanced search and filtering
+12. ~~Voice notes recording~~ ✅ Done
+13. ~~Advanced search and filtering~~ ✅ Done (global search API, command palette, dedicated search page)
 
 See **MUSIC-OS-TRANSFORMATION.md** for complete detailed documentation.
 
