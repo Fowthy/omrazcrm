@@ -83,7 +83,6 @@ const VISUAL_TYPES = [
 export default function VisualizationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newVisualization, setNewVisualization] = useState({
     name: '',
     description: '',
@@ -140,7 +139,6 @@ export default function VisualizationsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/visualizations', {
         method: 'POST',
@@ -166,8 +164,6 @@ export default function VisualizationsPage() {
       queryClient.invalidateQueries({ queryKey: ['visualizations'] });
     } catch (error) {
       toast.error('Failed to create visualization');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -309,8 +305,7 @@ export default function VisualizationsPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={isCreating}>
-                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleCreate}>
                 Create Visualization
               </Button>
             </DialogFooter>

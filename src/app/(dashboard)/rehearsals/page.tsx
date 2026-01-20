@@ -46,7 +46,6 @@ export default function RehearsalsPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [editingRehearsal, setEditingRehearsal] = useState<Rehearsal | null>(null);
   const [newRehearsal, setNewRehearsal] = useState({
     title: '',
@@ -72,7 +71,6 @@ export default function RehearsalsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/rehearsals', {
         method: 'POST',
@@ -95,8 +93,6 @@ export default function RehearsalsPage() {
       queryClient.invalidateQueries({ queryKey: ['rehearsals'] });
     } catch (error) {
       toast.error('Failed to schedule rehearsal');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -106,7 +102,6 @@ export default function RehearsalsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/rehearsals/${editingRehearsal.id}`, {
         method: 'PATCH',
@@ -122,8 +117,6 @@ export default function RehearsalsPage() {
       queryClient.invalidateQueries({ queryKey: ['rehearsals'] });
     } catch (error) {
       toast.error('Failed to update rehearsal');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -256,15 +249,8 @@ export default function RehearsalsPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateRehearsal} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Scheduling...
-                  </>
-                ) : (
-                  'Schedule'
-                )}
+              <Button onClick={handleCreateRehearsal}>
+                Schedule
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -468,15 +454,8 @@ export default function RehearsalsPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditRehearsal} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleEditRehearsal}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -83,7 +83,6 @@ export default function GearPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [editingGear, setEditingGear] = useState<GearItem | null>(null);
   const [selectedGearForMaintenance, setSelectedGearForMaintenance] = useState<GearItem | null>(null);
   const [newGear, setNewGear] = useState({
@@ -158,7 +157,6 @@ export default function GearPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/gear/${selectedGearForMaintenance.id}/maintenance`, {
         method: 'POST',
@@ -181,8 +179,6 @@ export default function GearPage() {
       queryClient.invalidateQueries({ queryKey: ['gear-maintenance-all'] });
     } catch (error) {
       toast.error('Failed to add maintenance log');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -192,7 +188,6 @@ export default function GearPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/gear', {
         method: 'POST',
@@ -222,8 +217,6 @@ export default function GearPage() {
       queryClient.invalidateQueries({ queryKey: ['gear'] });
     } catch (error) {
       toast.error('Failed to add gear');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -233,7 +226,6 @@ export default function GearPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/gear/${editingGear.id}`, {
         method: 'PATCH',
@@ -249,8 +241,6 @@ export default function GearPage() {
       queryClient.invalidateQueries({ queryKey: ['gear'] });
     } catch (error) {
       toast.error('Failed to update gear');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -501,15 +491,8 @@ export default function GearPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateGear} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  'Add Gear'
-                )}
+              <Button onClick={handleCreateGear}>
+                Add Gear
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -780,15 +763,8 @@ export default function GearPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditGear} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleEditGear}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -892,15 +868,8 @@ export default function GearPage() {
             <Button variant="outline" onClick={() => setIsMaintenanceDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddMaintenance} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                'Add Log'
-              )}
+            <Button onClick={handleAddMaintenance}>
+              Add Log
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -67,7 +67,6 @@ export default function SongsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newSong, setNewSong] = useState({
     title: '',
     description: '',
@@ -204,8 +203,6 @@ export default function SongsPage() {
       return;
     }
 
-    setIsCreating(true);
-
     try {
       const res = await fetch('/api/songs', {
         method: 'POST',
@@ -232,8 +229,6 @@ export default function SongsPage() {
       refetch();
     } catch (error) {
       toast.error('Failed to create song');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -393,15 +388,8 @@ export default function SongsPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateSong} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Song'
-                )}
+              <Button onClick={handleCreateSong}>
+                Create Song
               </Button>
             </DialogFooter>
           </DialogContent>

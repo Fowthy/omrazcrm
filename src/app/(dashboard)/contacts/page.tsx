@@ -57,7 +57,6 @@ export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [newContact, setNewContact] = useState({
     name: '',
@@ -91,7 +90,6 @@ export default function ContactsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/contacts', {
         method: 'POST',
@@ -116,8 +114,6 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     } catch (error) {
       toast.error('Failed to add contact');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -127,7 +123,6 @@ export default function ContactsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/contacts/${editingContact.id}`, {
         method: 'PATCH',
@@ -143,8 +138,6 @@ export default function ContactsPage() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     } catch (error) {
       toast.error('Failed to update contact');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -286,15 +279,8 @@ export default function ContactsPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateContact} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  'Add Contact'
-                )}
+              <Button onClick={handleCreateContact}>
+                Add Contact
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -510,15 +496,8 @@ export default function ContactsPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditContact} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleEditContact}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

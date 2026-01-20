@@ -84,7 +84,6 @@ interface Song {
 export default function TempoMapsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newTempoMap, setNewTempoMap] = useState({
     name: '',
     description: '',
@@ -141,7 +140,6 @@ export default function TempoMapsPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/tempo-maps', {
         method: 'POST',
@@ -168,8 +166,6 @@ export default function TempoMapsPage() {
       queryClient.invalidateQueries({ queryKey: ['tempoMaps'] });
     } catch (error) {
       toast.error('Failed to create tempo map');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -332,8 +328,7 @@ export default function TempoMapsPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateTempoMap} disabled={isCreating}>
-                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleCreateTempoMap}>
                 Create Tempo Map
               </Button>
             </DialogFooter>

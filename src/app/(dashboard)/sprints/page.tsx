@@ -53,7 +53,6 @@ const sprintStatuses = [
 export default function SprintsPage() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -167,9 +166,11 @@ export default function SprintsPage() {
       toast.error('Start and end dates are required');
       return;
     }
-    setIsCreating(true);
-    await createSprintMutation.mutateAsync(newSprint);
-    setIsCreating(false);
+    try {
+      await createSprintMutation.mutateAsync(newSprint);
+    } catch (error) {
+      // Error already handled by onError in mutation
+    }
   };
 
   const handleUpdateSprint = async () => {
@@ -292,8 +293,8 @@ export default function SprintsPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateSprint} disabled={isCreating}>
-                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button onClick={handleCreateSprint} disabled={createSprintMutation.isPending}>
+                {createSprintMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Sprint
               </Button>
             </DialogFooter>

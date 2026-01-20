@@ -60,7 +60,6 @@ export default function ProjectsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
@@ -93,8 +92,6 @@ export default function ProjectsPage() {
       return;
     }
 
-    setIsCreating(true);
-
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -110,8 +107,6 @@ export default function ProjectsPage() {
       refetch();
     } catch (error) {
       toast.error('Failed to create project');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -238,15 +233,8 @@ export default function ProjectsPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreateProject} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Project'
-                )}
+              <Button onClick={handleCreateProject}>
+                Create Project
               </Button>
             </DialogFooter>
           </DialogContent>

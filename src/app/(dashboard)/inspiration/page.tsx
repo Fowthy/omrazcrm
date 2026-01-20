@@ -67,7 +67,6 @@ export default function InspirationPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const [editingInspiration, setEditingInspiration] = useState<Inspiration | null>(null);
   const [newInspiration, setNewInspiration] = useState({
     title: '',
@@ -101,7 +100,6 @@ export default function InspirationPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch('/api/inspiration', {
         method: 'POST',
@@ -123,8 +121,6 @@ export default function InspirationPage() {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] });
     } catch (error) {
       toast.error('Failed to save inspiration');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -134,7 +130,6 @@ export default function InspirationPage() {
       return;
     }
 
-    setIsCreating(true);
     try {
       const res = await fetch(`/api/inspiration/${editingInspiration.id}`, {
         method: 'PATCH',
@@ -150,8 +145,6 @@ export default function InspirationPage() {
       queryClient.invalidateQueries({ queryKey: ['inspirations'] });
     } catch (error) {
       toast.error('Failed to update inspiration');
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -277,15 +270,8 @@ export default function InspirationPage() {
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateInspiration} disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save'
-                )}
+              <Button onClick={handleCreateInspiration}>
+                Save
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -503,15 +489,8 @@ export default function InspirationPage() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEditInspiration} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+            <Button onClick={handleEditInspiration}>
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
